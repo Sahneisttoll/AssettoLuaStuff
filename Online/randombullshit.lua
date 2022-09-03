@@ -16,7 +16,7 @@ local function ObamiumHUD()
   ui.sameLine()
   if ui.button("LoadPos") or ui.keyPressed(ui.Key.Right) then
     physics.setCarPosition(0,mem.pos,-mem.dir)
-    physics.setCarVelocity(0,mem.vel * vec3(mem.extraspeeder, mem.extraspeeder,mem.extraspeeder))
+    physics.setCarVelocity(0,mem.vel * vec3(mem.extraspeeder, 0,mem.extraspeeder))
       if mem.extraspeeder == 1 then
         physics.engageGear(0,mem.gear)
       else

@@ -1,88 +1,88 @@
 local function ObamiumHUD()
-  local mem = ac.storage{
-    pos=vec3(0,0,0),
-    dir=vec3(0,0,0),
-    vel=vec3(0,0,0),
-    gear= 0,
-    rpm= 0,
-    extraspeeder = 1,
-    aicheckbox = false,
-    aiLevel = 0.5,
-    aiAgression = 0.5
-  }
-  local function savepos1()
-    mem.pos=ac.getCar(0).position
-    mem.dir=ac.getCar(0).look
-    mem.vel=ac.getCar(0).velocity
-    mem.gear=ac.getCar(0).gear
-    mem.rpm=ac.getCar(0).rpm
-  end
+	local mem = ac.storage({
+		pos = vec3(0, 0, 0),
+		dir = vec3(0, 0, 0),
+		vel = vec3(0, 0, 0),
+		gear = 0,
+		rpm = 0,
+		extraspeeder = 1,
+		aicheckbox = false,
+		aiLevel = 0.5,
+		aiAgression = 0.5,
+	})
+	local function savepos1()
+		mem.pos = ac.getCar(0).position
+		mem.dir = ac.getCar(0).look
+		mem.vel = ac.getCar(0).velocity
+		mem.gear = ac.getCar(0).gear
+		mem.rpm = ac.getCar(0).rpm
+	end
 
-  local function loadpos1()
-    physics.setCarPosition(0,mem.pos,-mem.dir)
-    physics.setCarVelocity(0,mem.vel * vec3(mem.extraspeeder, mem.extraspeeder *0.8,mem.extraspeeder))
-    physics.setEngineRPM(0,mem.rpm)
-      if mem.extraspeeder <= 1 then
-        physics.engageGear(0,mem.gear)
-        else if
-        mem.extraspeeder > 1 then
-          physics.engageGear(0,ac.getCar(0).gearCount)
-        end
-    end
-  end
+	local function loadpos1()
+		physics.setCarPosition(0, mem.pos, -mem.dir)
+		physics.setCarVelocity(0, mem.vel * vec3(mem.extraspeeder, mem.extraspeeder * 0.8, mem.extraspeeder))
+		physics.setEngineRPM(0, mem.rpm)
+		if mem.extraspeeder <= 1 then
+			physics.engageGear(0, mem.gear)
+		else
+			if mem.extraspeeder > 1 then
+				physics.engageGear(0, ac.getCar(0).gearCount)
+			end
+		end
+	end
 
+	if ui.checkbox("keybinds", keybinder) then
+		keybinder = not keybinder
+	end
+	if keybinder == true then
+		ui.text("left arrow save pos\nright arrow load pos")
+	end
 
-  if ui.checkbox('keybinds', keybinder ) then
-    keybinder = not keybinder
-  end
-  if keybinder == true then
-    ui.text("left arrow save pos\nright arrow load pos")
-  end
+	if keybinder == true and ui.keyPressed(ui.Key.Left) then
+		savepos1()
+		ui.text("saved")
+	end
+	if keybinder == true and ui.keyPressed(ui.Key.Right) then
+		loadpos1()
+		ui.text("loaded")
+	end
 
-  if keybinder == true and ui.keyPressed(ui.Key.Left) then
-    savepos1()
-    ui.text("saved")
-  end
-  if keybinder == true and ui.keyPressed(ui.Key.Right) then
-    loadpos1()
-    ui.text("loaded")
-  end
+	if ui.button("SavePos") then
+		savepos1()
+	end
+	ui.sameLine()
+	if ui.button("LoadPos") then
+		loadpos1()
+	end
 
-  if ui.button("SavePos") then
-    savepos1()
-  end ui.sameLine()
-  if ui.button("LoadPos") then
-    loadpos1()
-  end
+	local extraspeed = ui.slider("##" .. "Speed", mem.extraspeeder, 0, 10, "Speed" .. ": %.1f")
+	if extraspeed then
+		mem.extraspeeder = extraspeed
+	end
 
-  local extraspeed = ui.slider('##' .. 'Speed', mem.extraspeeder, 0, 10, 'Speed' .. ': %.1f')
-  if extraspeed then
-    mem.extraspeeder = extraspeed
-  end
-
-ui.text("\n")
-  if ui.checkbox('AI', mem.aicheckbox) then
-    mem.aicheckbox = not mem.aicheckbox
-    if mem.aicheckbox == true then
-      physics.setCarAutopilot(true)
-      else
-      physics.setCarAutopilot(false)
-    end
-  end
-  if mem.aicheckbox == true then
-    ui.text("ai will break after teleporting\nrecheck it to fix it")
-  end
-  if mem.aicheckbox == true then
-    local aiLevel = ui.slider('##' .. 'AI Level', mem.aiLevel, 0.43, 1, 'AI Level' .. ': %.2f')
-      if aiLevel then
-        mem.aiLevel = aiLevel
-        physics.setAILevel(0,mem.aiLevel)
-    end
-    local aiAgression = ui.slider('##' .. 'AI Agression', mem.aiAgression, 0, 1, 'AI Agression' .. ': %.2f')
-      if aiAgression then
-        mem.aiAgression = aiAgression
-        physics.setAIAggression(0,mem.aiAgression)
-    end
-  end
+	ui.text("\n")
+	if ui.checkbox("AI", mem.aicheckbox) then
+		mem.aicheckbox = not mem.aicheckbox
+		if mem.aicheckbox == true then
+			physics.setCarAutopilot(true)
+		else
+			physics.setCarAutopilot(false)
+		end
+	end
+	if mem.aicheckbox == true then
+		ui.text("ai will break after teleporting\nrecheck it to fix it")
+	end
+	if mem.aicheckbox == true then
+		local aiLevel = ui.slider("##" .. "AI Level", mem.aiLevel, 0.43, 1, "AI Level" .. ": %.2f")
+		if aiLevel then
+			mem.aiLevel = aiLevel
+			physics.setAILevel(0, mem.aiLevel)
+		end
+		local aiAgression = ui.slider("##" .. "AI Agression", mem.aiAgression, 0, 1, "AI Agression" .. ": %.2f")
+		if aiAgression then
+			mem.aiAgression = aiAgression
+			physics.setAIAggression(0, mem.aiAgression)
+		end
+	end
 end
-ui.registerOnlineExtra(ui.Icons.Crosshair, 'ExtraStuff', nil, ObamiumHUD, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Crosshair, "ExtraStuff", nil, ObamiumHUD, nil, ui.OnlineExtraFlags.Tool)

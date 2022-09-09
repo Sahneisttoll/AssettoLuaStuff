@@ -60,29 +60,43 @@ local function ObamiumHUD()
 		mem.extraspeeder = extraspeed
 	end
 
-	ui.text("\n")
-	if ui.checkbox("AI", mem.aicheckbox) then
-		mem.aicheckbox = not mem.aicheckbox
+	local function tab1()
+		ui.text("Ai only uses fastlane.ai")
+		if ui.checkbox("Enable AI/Autopilot", mem.aicheckbox) then
+			mem.aicheckbox = not mem.aicheckbox
+			if mem.aicheckbox == true then
+				physics.setCarAutopilot(true)
+			else
+				physics.setCarAutopilot(false)
+			end
+		end
 		if mem.aicheckbox == true then
-			physics.setCarAutopilot(true)
-		else
-			physics.setCarAutopilot(false)
+			ui.text("ai will break after teleporting\nrecheck it to fix it")
+		end
+		if mem.aicheckbox == true then
+			local aiLevel = ui.slider("##" .. "AI Level", mem.aiLevel, 0.43, 1, "AI Level" .. ": %.2f")
+			if aiLevel then
+				mem.aiLevel = aiLevel
+				physics.setAILevel(0, mem.aiLevel)
+			end
+			local aiAgression = ui.slider("##" .. "AI Agression", mem.aiAgression, 0, 1, "AI Agression" .. ": %.2f")
+			if aiAgression then
+				mem.aiAgression = aiAgression
+				physics.setAIAggression(0, mem.aiAgression)
+			end
 		end
 	end
-	if mem.aicheckbox == true then
-		ui.text("ai will break after teleporting\nrecheck it to fix it")
-	end
-	if mem.aicheckbox == true then
-		local aiLevel = ui.slider("##" .. "AI Level", mem.aiLevel, 0.43, 1, "AI Level" .. ": %.2f")
-		if aiLevel then
-			mem.aiLevel = aiLevel
-			physics.setAILevel(0, mem.aiLevel)
-		end
-		local aiAgression = ui.slider("##" .. "AI Agression", mem.aiAgression, 0, 1, "AI Agression" .. ": %.2f")
-		if aiAgression then
-			mem.aiAgression = aiAgression
-			physics.setAIAggression(0, mem.aiAgression)
+
+	local function tab2()
+		if ui.checkbox("kebab", nwind) then
+			nwind = nwind
+			ac.setMessage("Obama has overtaken", "the middle east")
 		end
 	end
+
+	ui.tabBar("sabcar", function()
+		ui.tabItem("AI", tab1)
+		ui.tabItem("Testing", tab2)
+	end)
 end
 ui.registerOnlineExtra(ui.Icons.Crosshair, "ExtraStuff", nil, ObamiumHUD, nil, ui.OnlineExtraFlags.Tool)

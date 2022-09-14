@@ -131,18 +131,19 @@ function keybindtesting()
 		bf = ui.ButtonFlags.None
 		}
 
-	if ui.checkbox("Select Keybind",niggerihatethis) then
-		niggerihatethis = not niggerihatethis
+	if ui.checkbox("Select Keybind",keybi) then
+		keybi = not keybi
 	end
-		if niggerihatethis == true then
+		if keybi == true then
 		for key, value in pairs(ui.KeyIndex) do
 			if ui.keyboardButtonDown(value) then
 				keystore.value = value
 				keystore.key = tostring(key)
-				niggerihatethis = false
+				keybi = false
 			end
 		end
 	end
+
 	if ui.button("Del Keybind") then
 		keystore.key = "nan"
 		keystore.value = 0

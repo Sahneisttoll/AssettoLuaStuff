@@ -110,7 +110,7 @@ local function tab4()
 	ui.newLine(25)
 end
 
-function script.windowMain()
+local function tab5()
 
 	--best slider example without fucking ac.storage
 	local getfov = ac.getCameraFOV()
@@ -122,7 +122,44 @@ function script.windowMain()
 	end
 
 	ui.text("Speed: " .. tostring(math.floor(ac.getCar(0).speedKmh).." km/h"))
-	ui.newLine(10)
+end
+
+function keybindtesting()
+	keystore = ac.storage{
+		key = "",
+		value = 0,
+		bf = ui.ButtonFlags.None
+		}
+
+	if ui.checkbox("Select Keybind",niggerihatethis) then
+		niggerihatethis = not niggerihatethis
+	end
+		if niggerihatethis == true then
+		for key, value in pairs(ui.KeyIndex) do
+			if ui.keyboardButtonDown(value) then
+				keystore.value = value
+				keystore.key = tostring(key)
+				niggerihatethis = false
+			end
+		end
+	end
+	if ui.button("Del Keybind") then
+		keystore.key = "nan"
+		keystore.value = 0
+	end
+
+	ui.text("allah: " .. keystore.key .. "	".. keystore.value)
+	ui.text("test keybind	"..tostring(ui.keyboardButtonDown(keystore.value)))
+	if ui.keyboardButtonDown(keystore.value) then
+		for i = 1, 10 do
+			ui.textWrapped("god	 im	 bad",1) ui.sameLine()
+		end
+	end
+end
+
+function script.windowMain()
+	keybindtesting()
+	ui.newLine(25)
 	if ui.checkbox("Tabs", bruh) then
 		bruh = not bruh
 	end
@@ -132,6 +169,7 @@ function script.windowMain()
 			ui.tabItem("Cammy", tab2)
 			ui.tabItem("Phy", tab3)
 			ui.tabItem("rdm", tab4)
+			ui.tabItem("fov", tab5)
 		end)
 	end
 end

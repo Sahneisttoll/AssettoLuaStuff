@@ -127,8 +127,7 @@ end
 function keybindtesting()
 	keystore = ac.storage{
 		key = "",
-		value = 0,
-		bf = ui.ButtonFlags.None
+		value = 0
 		}
 
 	if ui.checkbox("Select Keybind",keybi) then

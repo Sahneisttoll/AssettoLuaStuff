@@ -41,6 +41,33 @@ local function TeleportCam()
 	physics.setCarVelocity(0, dir:mul(vec3(mem.extraspeedermouse, mem.extraspeedermouse, mem.extraspeedermouse)))
 end
 
+local function tab1()
+	ui.text("Ai only uses fastlane.ai")
+	if ui.checkbox("Enable AI/Autopilot", mem.aicheckbox) then
+		mem.aicheckbox = not mem.aicheckbox
+		if mem.aicheckbox == true then
+			physics.setCarAutopilot(true)
+		else
+			physics.setCarAutopilot(false)
+		end
+	end
+	if mem.aicheckbox == true then
+		ui.text("ai will break after teleporting\nrecheck it to fix it")
+	end
+	if mem.aicheckbox == true then
+		local aiLevel = ui.slider("##" .. "AI Level", mem.aiLevel, 0.43, 1, "AI Level" .. ": %.2f")
+		if aiLevel then
+			mem.aiLevel = aiLevel
+			physics.setAILevel(0, mem.aiLevel)
+		end
+		local aiAgression = ui.slider("##" .. "AI Agression", mem.aiAgression, 0, 1, "AI Agression" .. ": %.2f")
+		if aiAgression then
+			mem.aiAgression = aiAgression
+			physics.setAIAggression(0, mem.aiAgression)
+		end
+	end
+end
+
 local function tab2()
 	if ui.button("SavePos") then
 		savepos1()
@@ -81,38 +108,19 @@ local function tab2()
 		mem.keybindtext = "TP to Cam"
 	end
 	if keybindermouse == true then
-		local extraspeedmouse = ui.slider("##" .. "unique",mem.extraspeedermouse,0,1000,"Speed: %.0fm/s: " .. mem.extraspeedermouse * 3.6 .. "Kmh",2)
+		local extraspeedmouse = ui.slider(
+			"##" .. "unique",
+			mem.extraspeedermouse,
+			0,
+			1000,
+			"Speed: %.0fm/s: " .. mem.extraspeedermouse * 3.6 .. "Kmh",
+			2
+		)
 		if extraspeedmouse then
 			mem.extraspeedermouse = extraspeedmouse
 		end
 	end
 	ui.text("last interaction: " .. mem.keybindtext)
-end
-local function tab1()
-	ui.text("Ai only uses fastlane.ai")
-	if ui.checkbox("Enable AI/Autopilot", mem.aicheckbox) then
-		mem.aicheckbox = not mem.aicheckbox
-		if mem.aicheckbox == true then
-			physics.setCarAutopilot(true)
-		else
-			physics.setCarAutopilot(false)
-		end
-	end
-	if mem.aicheckbox == true then
-		ui.text("ai will break after teleporting\nrecheck it to fix it")
-	end
-	if mem.aicheckbox == true then
-		local aiLevel = ui.slider("##" .. "AI Level", mem.aiLevel, 0.43, 1, "AI Level" .. ": %.2f")
-		if aiLevel then
-			mem.aiLevel = aiLevel
-			physics.setAILevel(0, mem.aiLevel)
-		end
-		local aiAgression = ui.slider("##" .. "AI Agression", mem.aiAgression, 0, 1, "AI Agression" .. ": %.2f")
-		if aiAgression then
-			mem.aiAgression = aiAgression
-			physics.setAIAggression(0, mem.aiAgression)
-		end
-	end
 end
 
 local function tab25()
@@ -121,15 +129,13 @@ local function tab25()
 		ac.setMessage("Obama has overtaken", "the middle east")
 	end
 end
-
+ui.columns()
 
 local function ObamiumHUD()
-
 	ui.tabBar("sabcar", function()
 		ui.tabItem("AI", tab1)
 		ui.tabItem("TP", tab2)
 		ui.tabItem("Testing", tab25)
 	end)
-
 end
 ui.registerOnlineExtra(ui.Icons.Crosshair, "ExtraStuff", nil, ObamiumHUD, nil, ui.OnlineExtraFlags.Tool)

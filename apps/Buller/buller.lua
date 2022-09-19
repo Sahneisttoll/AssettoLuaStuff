@@ -111,7 +111,6 @@ local function tab4()
 end
 
 local function tab5()
-
 	--best slider example without fucking ac.storage
 	local getfov = ac.getCameraFOV()
 	funnie = getfov
@@ -121,19 +120,19 @@ local function tab5()
 		ac.setCameraFOV(fovthing)
 	end
 
-	ui.text("Speed: " .. tostring(math.floor(ac.getCar(0).speedKmh).." km/h"))
+	ui.text("Speed: " .. tostring(math.floor(ac.getCar(0).speedKmh) .. " km/h"))
 end
 
-function keybindtesting()
-	keystore = ac.storage{
+local function tab6()
+	keystore = ac.storage({
 		key = "",
-		value = 0
-		}
+		value = 0,
+	})
 
-	if ui.checkbox("Select Keybind",keybi) then
+	if ui.checkbox("Select Keybind", keybi) then
 		keybi = not keybi
 	end
-		if keybi == true then
+	if keybi == true then
 		for key, value in pairs(ui.KeyIndex) do
 			if ui.keyboardButtonDown(value) then
 				keystore.value = value
@@ -148,17 +147,17 @@ function keybindtesting()
 		keystore.value = 0
 	end
 
-	ui.text("allah: " .. keystore.key .. "	".. keystore.value)
-	ui.text("test keybind	"..tostring(ui.keyboardButtonDown(keystore.value)))
+	ui.text("allah: " .. keystore.key .. "	" .. keystore.value)
+	ui.text("test keybind	" .. tostring(ui.keyboardButtonDown(keystore.value)))
 	if ui.keyboardButtonDown(keystore.value) then
 		for i = 1, 10 do
-			ui.textWrapped("god	 im	 bad",1) ui.sameLine()
+			ui.textWrapped("god	 im	 bad", 1)
+			ui.sameLine()
 		end
 	end
 end
 
 function script.windowMain()
-	keybindtesting()
 	ui.newLine(25)
 	if ui.checkbox("Tabs", bruh) then
 		bruh = not bruh
@@ -170,6 +169,7 @@ function script.windowMain()
 			ui.tabItem("Phy", tab3)
 			ui.tabItem("rdm", tab4)
 			ui.tabItem("fov", tab5)
+			ui.tabItem("Keybind thing", tab6)
 		end)
 	end
 end

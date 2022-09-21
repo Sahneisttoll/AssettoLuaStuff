@@ -16,7 +16,7 @@ local t_l = sim.trackLengthM --track_length
 
 
 
-function script.MeterGap()
+function script.metergapMain()
 	if settings.debugText == true then
 		DebugText()
 	else
@@ -49,7 +49,7 @@ end
 
 
 
-function script.GapSettings(dt)
+function script.gapSettings(dt)
 	ui.text("Hello to Settings\n ")
 	if ui.checkbox("Replace with Debug text", settings.debugText) then
 		settings.debugText = not settings.debugText

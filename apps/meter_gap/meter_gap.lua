@@ -6,35 +6,52 @@ local settings = ac.storage{
 }
 
 
-	-- always needs to be updated
+	--[[ always needs to be updated
 function script.update()
 end
+	]]
 
 	-- stuff needed 
 local sim = ac.getSim()
 local t_l = sim.trackLengthM --track_length
 
+function wherearelecars()
+	local f_c = ac.getCar(sim.focusedCar) -- focused_car
+	local f_c_m = t_l * ac.worldCoordinateToTrackProgress(f_c.position) -- focused car position in meters
 
+
+	for i = 1, sim.carsCount - 1 do
+		local r_c = ac.getCar(i)
+		local r_c_m = t_l * ac.worldCoordinateToTrackProgress(r_c.position)
+		local difference = f_c_m - r_c_m
+			if r_c.isConnected == true and r_c_m >= f_c_m then
+				ui.text("Infront : " .. math.round(difference,1).."m")
+			end
+	end
+
+	ui.text("me")
+
+	for i = 1, sim.carsCount - 1 do
+		local r_c = ac.getCar(i)
+		local r_c_m = t_l * ac.worldCoordinateToTrackProgress(r_c.position)
+		local difference = f_c_m - r_c_m
+			if r_c.isConnected == true and r_c_m <= f_c_m then
+				ui.text("Behind : " .. math.round(difference,1).."m")
+			end
+	end
+
+end
 
 function script.metergapMain()
 	if settings.debugText == true then
 		DebugText()
 	else
 		if ac.hasTrackSpline() == true then
-			ui.text("LOL: ")
-			local f_c = ac.getCar(sim.focusedCar) -- focused_car
-			local f_c_m = t_l * ac.worldCoordinateToTrackProgress(f_c.position) -- focused car position in meters
-			ui.text("me: ".. math.round(f_c_m,0))
-
-
-			for i = 1, sim.carsCount - 1 do
-				local r_c = ac.getCar(i)
-				local r_c_m = t_l * ac.worldCoordinateToTrackProgress(r_c.position)
-				ui.text("LOL: ".. math.round(r_c_m,0))
-			end
+			wherearelecars()
 		end
 	end
 end
+
 
 
 
@@ -62,9 +79,13 @@ function script.gapSettings(dt)
 	end
 	ui.newLine(0)
 end
--- debug shit down here
-function DebugText()
 
+
+-- debug shit down here
+
+local tablecarssort = {}
+function DebugText()
+	
 	local d_sim = ac.getSim()
 	local t_length = d_sim.trackLengthM
 	local f_car = ac.getCar(d_sim.focusedCar)
@@ -117,9 +138,13 @@ function DebugText()
 		for i = 1, d_sim.carsCount - 1 do
 			local r_pos = ac.getCar(i).position
 			local r_name = ac.getDriverName(i)
-			local r_pos_that_far_away = math.distance(f_pos, r_pos)
+			local r_pos_that_far_away = math.round(math.distance(f_pos, r_pos),1)
 			--ui.text("Enemy ("..r_name.."): " .. tostring(r_pos))
-			ui.text("Enemy Distance: " .. math.round(r_pos_that_far_away,2).."m")
+			ui.text("Enemy Distance: " .. r_pos_that_far_away.."m")
 		end
+
+		-- table.insert()
+		local stringed = stringify(tablecarssort,true)
+		ui.text("shit ass table"..stringed)
 	end
 end

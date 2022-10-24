@@ -158,7 +158,8 @@ local function tab6()
 end
 
 function script.windowMain()
-	ui.newLine(25)
+	ui.text("Running CSP version: '"..ac.getPatchVersion().."' or also called '".. ac.getPatchVersionCode().."'")
+	ui.newLine(5)
 	if ui.checkbox("Tabs", bruh) then
 		bruh = not bruh
 	end

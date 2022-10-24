@@ -128,7 +128,6 @@ local function tab25()
 		ac.setMessage("Obama has overtaken", "the middle east")
 	end
 end
-ui.columns()
 
 local function RDMBULLSHITHud()
 	ui.tabBar("sabcar", function()

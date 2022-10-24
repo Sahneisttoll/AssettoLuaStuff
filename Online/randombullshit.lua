@@ -1,4 +1,3 @@
----@diagnostic disable: param-type-mismatch
 local mem = ac.storage({
 	pos = vec3(0, 0, 0),
 	dir = vec3(0, 0, 0),
@@ -131,11 +130,11 @@ local function tab25()
 end
 ui.columns()
 
-local function ObamiumHUD()
+local function RDMBULLSHITHud()
 	ui.tabBar("sabcar", function()
 		ui.tabItem("AI", tab1)
 		ui.tabItem("TP", tab2)
 		ui.tabItem("Testing", tab25)
 	end)
 end
-ui.registerOnlineExtra(ui.Icons.Crosshair, "ExtraStuff", nil, ObamiumHUD, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Crosshair, "RDMBULLSHIT", nil, RDMBULLSHITHud, nil, ui.OnlineExtraFlags.Tool)

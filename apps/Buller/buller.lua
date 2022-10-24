@@ -123,43 +123,80 @@ local function tab5()
 	ui.text("Speed: " .. tostring(math.floor(ac.getCar(0).speedKmh) .. " km/h"))
 end
 
-local function tab6()
+local function tab6() -- keybind shenanigains
 	keystore = ac.storage({
 		key = "",
 		value = 0,
 	})
 
-	if ui.checkbox("Select Keybind", keybi) then
-		keybi = not keybi
+	if ui.checkbox("Select Keybind", keyb) then
+		keyb = not keyb
 	end
-	if keybi == true then
+
+	if keyb == true then
 		for key, value in pairs(ui.KeyIndex) do
 			if ui.keyboardButtonDown(value) then
 				keystore.value = value
 				keystore.key = tostring(key)
-				keybi = false
+				keyb = false
 			end
 		end
 	end
 
 	if ui.button("Del Keybind") then
-		keystore.key = "nan"
+		keystore.key = ""
 		keystore.value = 0
 	end
 
-	ui.text("allah: " .. keystore.key .. "	" .. keystore.value)
+	ui.text("Key: " .. keystore.key .. "	" .. keystore.value)
 	ui.text("test keybind	" .. tostring(ui.keyboardButtonDown(keystore.value)))
 	if ui.keyboardButtonDown(keystore.value) then
-		for i = 1, 10 do
-			ui.textWrapped("god	 im	 bad", 1)
+		for i = 1, 2 do
+			ui.textWrapped("brr", 1)
 			ui.sameLine()
+		end
+	end
+
+	-- above is the old keybind system i used, very SHIT
+	ui.newLine(10)
+	-- better keybind system now with just a button and a reset button
+	keystore2 = ac.storage({v = -1,n = ""})
+	if ui.button(keystore2.v == 0 and "Press a Key." or (keystore2.v == -1 and "Click to Set Key" or (keystore2.v >= 1 and "Selected key: " .. keystore2.n))) then keystore2.v = 0 end
+	ui.sameLine()
+	if ui.button("Reset") then keystore2.v = -1 keystore2.n = "null" end
+
+	if keystore2.v == 0 then
+		for key, value in pairs(ui.KeyIndex) do
+			if ui.keyboardButtonDown(value) then
+				keystore2.v = value
+				keystore2.n = tostring(key)
+			end
 		end
 	end
 end
 
-function script.windowMain()
+local function tab7()
 	ui.text("Running CSP version: '"..ac.getPatchVersion().."' or also called '".. ac.getPatchVersionCode().."'")
-	ui.newLine(5)
+
+end
+
+local function test()
+
+end
+
+function script.windowMain()
+	test()
+
+	ui.newLine(25)
+
+	for key, value in pairs(ui.KeyIndex) do
+		if ui.keyboardButtonDown(value) then
+			ui.text(key .. ":".. value .. ",")
+			ui.sameLine()
+		end
+	end
+
+	ui.newLine(25)
 	if ui.checkbox("Tabs", bruh) then
 		bruh = not bruh
 	end
@@ -171,6 +208,7 @@ function script.windowMain()
 			ui.tabItem("rdm", tab4)
 			ui.tabItem("fov", tab5)
 			ui.tabItem("Keybind thing", tab6)
+			ui.tabItem("ver", tab7)
 		end)
 	end
 end

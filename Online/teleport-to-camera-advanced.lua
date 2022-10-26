@@ -16,6 +16,7 @@ function script.update(dt)
 		physics.setCarPosition(0, teleportPoint, -TeleportAngle)
 		physics.setCarVelocity(0, vec3(0, 0, 0))
 	end
+
 end
 
 function script.drawUI()
@@ -58,4 +59,4 @@ local function TPHud()
 	TPLeKey()
 end
 
-ui.registerOnlineExtra(ui.Icons.Compass, "TP to Camera", nil, TPHud, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Compass, "TP to Cam Menu", nil, TPHud, nil, ui.OnlineExtraFlags.Tool)

@@ -181,7 +181,9 @@ local function tab7()
 end
 
 local function test()
-
+	if ui.button("lol") then
+		ac.restartAssettoCorsa()
+	end
 end
 
 function script.windowMain()

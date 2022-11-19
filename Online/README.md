@@ -1,15 +1,20 @@
 # Online scripts 
 
-1. randombullshit.lua  
-	- ``is there to most times firstly test things``
+- randombullshit.lua  
+	- ``is there to most test things``
 
-2. teleport teleport-to-car.lua  
-	- ``thing to teleport to other cars, still needs cooldown``
+- Teleport-Menu.lua  
+	- ``combined all old scripts into one``
 
-3. teleport-to-camera.lua  
-	- ``teleports the car to the camera no cooldown and no ui``
 
-4. teleport-to-camera-advanced.lua  
-	- ``same as above with ui and cooldown, also with keybind
-	that you can change and an option to have it work
-	without the app open``
+
+### old folder
+
+- teleport teleport-to-car.lua  
+  - ``thing to teleport to other cars, no cooldown``
+  
+- teleport-to-camera.lua  
+  - ``teleports the car to the camera no cooldown and no ui``
+ 
+- teleport-to-camera-advanced.lua  
+	- ``has ui,cooldown,keybind and an option to use it while closed``

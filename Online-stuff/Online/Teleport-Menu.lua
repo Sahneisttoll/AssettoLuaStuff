@@ -7,13 +7,14 @@ CameraKey = ac.storage({
 })
 
 --Menu
-local function Teleportation💀()
+local function Teleportation()
 	--showing timer seems logical to me here
 	ui.text("Cooldown: " .. math.round(timer, 1))
 
 	ui.tabBar("Atabbar", function() --A TAB BAR
 		ui.tabItem("Car to Camera", keybindtp) --ayo
 		ui.tabItem("Car to Car", cartocar) --piss
+		ui.tabItem("Map", Mapthing)
 	end)
 end
 
@@ -52,80 +53,6 @@ function keybindtp() --first tab
 			end
 		end
 	end
-
-	mapthing()
-end
-
-local mapready = true
-local asd = {}
-function mapthing()
-	if ac.getPatchVersionCode() >= 2000 then
-		map1 = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/map_mini.png"
-		map = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/map.png"
-		current_map = map
-		if io.exists(map1) then
-			current_map = map1
-			ui.decodeImage(map1)
-		end
-		ui.decodeImage(map)
-		ini = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"
-		for a, b in ac.INIConfig.load(ini):serialize():gmatch("([_%a]+)=([-%d.]+)") do
-			asd[a] = tonumber(b)
-		end
-		image_size = ui.imageSize(map)
-		config_offset = vec2(asd.X_OFFSET, asd.Z_OFFSET)
-	end
-	ui.pushClipRect(0, ui.windowSize()) --background
-	if ac.getPatchVersionCode() < 2000 then
-		ui.text(versionerror)
-		return
-	end
-	ui.invisibleButton()
-
-	if mapready then
-		map_scale =
-			math.min((ui.windowWidth() - 20) / image_size.x, (ui.windowHeight() - 20) / image_size.y)
-
-		config_scale = map_scale / asd.SCALE_FACTOR
-		size = image_size * map_scale
-
-		if ac.getSim().isOnlineRace then --teleport config
-			onlineExtras = ac.INIConfig.onlineExtras()
-			teleports, teleports1 = {}, {}
-			for a, b in onlineExtras:iterateValues("TELEPORT_DESTINATIONS", "POINT") do
-				n = tonumber(b:match("%d+")) + 1
-				if teleports[n] == nil then
-					for i = #teleports + 1, n do
-						if teleports[i] == nil then
-							teleports[i] = {}
-						end
-					end
-				end
-				ac.debug("highest index", #teleports)
-
-				if b:match("POS") ~= nil then
-					teleports[n]["POS"] = onlineExtras:get("TELEPORT_DESTINATIONS", b, vec3())
-				elseif b:match("HEADING") ~= nil then
-					teleports[n]["HEADING"] = onlineExtras:get("TELEPORT_DESTINATIONS", b, 0)
-				elseif b:match("GROUP") ~= nil then
-					teleports[n]["GROUP"] = onlineExtras:get("TELEPORT_DESTINATIONS", b, "group")
-				else
-					teleports[n]["POINT"] = onlineExtras:get("TELEPORT_DESTINATIONS", b, "name")
-				end
-				teleports[n]["N"] = n
-			end
-
-			for i = 1, #teleports do
-				if teleports[i]["POINT"] ~= nil then
-					teleports1[#teleports1 + 1] = teleports[i]
-				end
-			end
-		end
-
-		if ui.isImageReady(current_map) then
-			mapready = false
-		end
-	end
 end
 
 function cartocar() --just straight up ripped from teleport to car cause it seems modular af LOL
@@ -149,6 +76,65 @@ function cartocar() --just straight up ripped from teleport to car cause it seem
 			end
 		end
 	end)
+end
+
+-- stuff with map
+local mapstuff = {}
+local pos3, dir3, pos2, dir2, dir2x = vec3(), vec3(), vec2(), vec2(), vec2()
+local padding = vec2(30, 50)
+local offsets = -padding * 0.5
+local ts = 10
+
+if ac.getPatchVersionCode() >= 2000 then
+	local shitter = ac.getFolder(ac.FolderID.ContentTracks) .. '/' .. ac.getTrackFullID('/') .. '/map_mini.png' --for srp only lol 
+	map = ac.getFolder(ac.FolderID.ContentTracks) .. '/' .. ac.getTrackFullID('/') .. '/map.png'
+	current_map = map
+	if io.exists(shitter) then
+		current_map = shitter
+		ui.decodeImage(shitter)
+	end
+	ui.decodeImage(map)
+	--ini stuff size
+	local ini = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"
+	for a, b in ac.INIConfig.load(ini):serialize():gmatch("([_%a]+)=([-%d.]+)") do -- ◀ i dont understand the "([_%a]+)=([-%d.]+)"
+		mapstuff[a] = tonumber(b)
+	end
+	image_size = ui.imageSize(map)
+	config_offset = vec2(mapstuff.X_OFFSET, mapstuff.Z_OFFSET)
+end
+
+function Mapthing()
+	ui.text("Press Spacebar while on map to teleport the camera")
+	map_scale = math.min((ui.windowWidth() - padding.x) / image_size.x, (ui.windowHeight() - padding.y) / image_size.y)
+	size = ui.imageSize(current_map) * map_scale
+	config_scale = map_scale / mapstuff.SCALE_FACTOR
+
+	ui.drawImage(current_map, -offsets, -offsets + size)
+
+	pos3 = ac.getCameraPosition()
+	pos2:set(pos3.x, pos3.z):add(config_offset):scale(config_scale):add(-offsets)
+
+
+	dir3 = ac.getCameraForward()
+	dir2 = vec2(dir3.x, dir3.z):normalize()
+	dir2x:set(dir3.z, -dir3.x):normalize()
+
+	ui.drawTriangleFilled(
+		pos2 + dir2 * ts,
+		pos2 - dir2 * ts - dir2x * ts * 0.75,
+		pos2 - dir2 * ts + dir2x * ts * 0.75,
+		rgbm(155, 0, 155, 2255)
+	)
+
+	if ui.keyPressed(ui.Key.Space) and ui.windowHovered() then
+		local camerapos = (ui.mouseLocalPos() + offsets) / config_scale - config_offset
+		local raycast = physics.raycastTrack(vec3(camerapos.x, 2000, camerapos.y), vec3(0, -1, 0), 3000)
+		local cameraheight = 2000 - raycast + 3
+		if raycast ~= -1 then
+			ac.setCurrentCamera(ac.CameraMode.Free)
+			ac.setCameraPosition(vec3(camerapos.x, cameraheight, camerapos.y))
+		end
+	end
 end
 
 local function DoTeleport() --simplest teleport function ever
@@ -177,4 +163,4 @@ function script.drawUI()
 	end
 end
 
-ui.registerOnlineExtra(ui.Icons.Compass, "Manual Teleport Menu", nil, Teleportation💀, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(ui.Icons.Compass, "Manual Teleport Menu", nil, Teleportation, nil, ui.OnlineExtraFlags.Tool)

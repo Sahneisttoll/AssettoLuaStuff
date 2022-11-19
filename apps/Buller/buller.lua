@@ -1,28 +1,13 @@
----@diagnostic disable: lowercase-global, param-type-mismatch
-ui.setAsynchronousImagesLoading(true)
 
-function script.Draw3D(dt)
-	ac.debug("AI controlled", ac.getCar(0).isAIControlled)
-end
-
---	ac.onChatMessage(function(message, carIndex, sessionID)
---		ac.log(
---			string.format(
---				"Message `%s` from %s, sessionID=%s, filtering: %s",
---				message,
---				carIndex,
---				sessionID,
---				message:match("ass") ~= nil
---			)
---		)
---		if message:match("damn") ~= nil and carIndex ~= 0 then
---			-- no swearing on my christian server
---			return true
---		end
---	end)
-
+local vall = {}
 local function tab1()
 	ui.text("is *physics.* usage allowed\n via app? The answer is: " .. tostring(physics.allowed()))
+
+	local val, chang = ui.slider("###22", vall.a, -1700, 1700, "KG: %.0f", 1)
+	if chang then
+		vall.a = val
+		physics.setCarBallast(0,vall.a)
+	end
 end
 
 local function tab2()
@@ -180,16 +165,10 @@ local function tab7()
 
 end
 
-local function test()
-	if ui.button("lol") then
-		ac.restartAssettoCorsa()
-	end
-end
+
 
 function script.windowMain()
-	test()
-
-	ui.newLine(25)
+	ui.newLine(2)
 
 	for key, value in pairs(ui.KeyIndex) do
 		if ui.keyboardButtonDown(value) then
@@ -204,7 +183,7 @@ function script.windowMain()
 	end
 	if bruh then
 		ui.tabBar("someTabBarID", function()
-			ui.tabItem("Checks", tab1)
+			ui.tabItem("ALLAH", tab1)
 			ui.tabItem("Cammy", tab2)
 			ui.tabItem("Phy", tab3)
 			ui.tabItem("rdm", tab4)

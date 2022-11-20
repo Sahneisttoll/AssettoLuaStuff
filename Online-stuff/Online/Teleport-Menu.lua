@@ -1,15 +1,14 @@
-local timer = 0
-CameraKey = ac.storage({
-	v = -1, --key value for ac
-	n = "", --key name for user
-	x = 0, --x pos for overlay pos
-	y = 0, --x pos for overlay pos
-})
+local timer = {
+	running = 0,	--we move length/blength into here
+	length = 3,		--the normal length after teleporting
+	blength = 0.5	--length after setting a button
+}
+
 
 --Menu
 local function Teleportation()
 	--showing timer seems logical to me here
-	ui.text("Cooldown: " .. math.round(timer, 1))
+	ui.text("Cooldown: " .. math.round(timer.running, 1))
 
 	ui.tabBar("Atabbar", function() --A TAB BAR
 		ui.tabItem("Car to Camera", keybindtp) --ayo
@@ -18,6 +17,13 @@ local function Teleportation()
 	end)
 end
 
+
+CameraKey = ac.storage({
+	v = -1, --key value for ac
+	n = "", --key name for user
+	x = 0, --x pos for overlay pos soon
+	y = 0, --x pos for overlay pos soon
+})
 function keybindtp() --first tab
 	ui.text("Teleport to Camera")
 	--Toggles Button and starts the key listening
@@ -44,8 +50,8 @@ function keybindtp() --first tab
 	if CameraKey.v == 0 then
 		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
 			if ui.keyboardButtonDown(value) then
-				if timer <= 0.5 then
-					timer = 0.5
+				if timer.running <= 0.5 then
+					timer.running = timer.blength
 				else
 				end --anti "cooldown" bypass LOL
 				CameraKey.v = value
@@ -56,7 +62,7 @@ function keybindtp() --first tab
 end
 
 function cartocar() --just straight up ripped from teleport to car cause it seems modular af LOL
-	ui.text("Will teleport you behind the selected car.")
+	ui.text("Will teleport you 8~ Meters behind the selected car.")
 	ui.text("Select car to teleport to:")
 	ui.childWindow("##drivers", vec2(ui.availableSpaceX(), 120), function()
 		for i = 1, sim.carsCount - 1 do
@@ -66,10 +72,10 @@ function cartocar() --just straight up ripped from teleport to car cause it seem
 				if ui.selectable(driverName, selectedCar == car) then
 					selectedCar = car
 				end
-				if ui.button("Teleport") and selectedCar and timer <= 0 then -- check if car selected/button pressed/timer above 0
-					timer = 3
+				if ui.button("Teleport") and selectedCar and timer.running <= 0 then -- check if car selected/button pressed/timer above 0
+					timer.running = timer.length
 					local dir = selectedCar.look
-					physics.setCarVelocity(0, vec3(0, 0, 0))
+					physics.setCarVelocity(0, vec3(0, 0, 0)) --reset velocity
 					-- spawn 8 meters behind, add 0.1 meter height to avoid falling through the map
 					physics.setCarPosition(0, selectedCar.position + vec3(0, 0.1, 0) - dir * 8, -dir)
 				end
@@ -81,21 +87,18 @@ end
 -- stuff with map
 local mapstuff = {}
 local pos3, dir3, pos2, dir2, dir2x = vec3(), vec3(), vec2(), vec2(), vec2()
-local padding = vec2(30, 50)
+local padding = vec2(30*3, 50*3)
 local offsets = -padding * 0.5
 local ts = 10
+local first = true
 
 if ac.getPatchVersionCode() >= 2000 then
-	local shitter = ac.getFolder(ac.FolderID.ContentTracks) .. '/' .. ac.getTrackFullID('/') .. '/map_mini.png' --for srp only lol 
 	map = ac.getFolder(ac.FolderID.ContentTracks) .. '/' .. ac.getTrackFullID('/') .. '/map.png'
 	current_map = map
-	if io.exists(shitter) then
-		current_map = shitter
-		ui.decodeImage(shitter)
-	end
 	ui.decodeImage(map)
+
 	--ini stuff size
-	local ini = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"
+	ini = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"
 	for a, b in ac.INIConfig.load(ini):serialize():gmatch("([_%a]+)=([-%d.]+)") do -- ◀ i dont understand the "([_%a]+)=([-%d.]+)"
 		mapstuff[a] = tonumber(b)
 	end
@@ -104,37 +107,84 @@ if ac.getPatchVersionCode() >= 2000 then
 end
 
 function Mapthing()
-	ui.text("Press Spacebar while on map to teleport the camera")
-	map_scale = math.min((ui.windowWidth() - padding.x) / image_size.x, (ui.windowHeight() - padding.y) / image_size.y)
-	size = ui.imageSize(current_map) * map_scale
-	config_scale = map_scale / mapstuff.SCALE_FACTOR
+	ui.text("Press Spacebar while on map to teleport the Camera.\nGreen for Camera/You.\nRed for other users.")
+	ui.childWindow("##LOL", vec2(ui.availableSpaceX(), ui.availableSpaceY()),
+	function()
+		if ac.getPatchVersionCode() < 2000 then ui.text("only above ver 2000 it work") return end
 
-	ui.drawImage(current_map, -offsets, -offsets + size)
-
-	pos3 = ac.getCameraPosition()
-	pos2:set(pos3.x, pos3.z):add(config_offset):scale(config_scale):add(-offsets)
-
-
-	dir3 = ac.getCameraForward()
-	dir2 = vec2(dir3.x, dir3.z):normalize()
-	dir2x:set(dir3.z, -dir3.x):normalize()
-
-	ui.drawTriangleFilled(
-		pos2 + dir2 * ts,
-		pos2 - dir2 * ts - dir2x * ts * 0.75,
-		pos2 - dir2 * ts + dir2x * ts * 0.75,
-		rgbm(155, 0, 155, 2255)
-	)
-
-	if ui.keyPressed(ui.Key.Space) and ui.windowHovered() then
-		local camerapos = (ui.mouseLocalPos() + offsets) / config_scale - config_offset
-		local raycast = physics.raycastTrack(vec3(camerapos.x, 2000, camerapos.y), vec3(0, -1, 0), 3000)
-		local cameraheight = 2000 - raycast + 3
-		if raycast ~= -1 then
-			ac.setCurrentCamera(ac.CameraMode.Free)
-			ac.setCameraPosition(vec3(camerapos.x, cameraheight, camerapos.y))
+		if first then --set the map scale, if not in here it will keep the size and not scale with scroll wheel
+			map_scale = math.min((ui.windowWidth() - padding.x) / image_size.x, (ui.windowHeight() - padding.y) / image_size.y)
+			config_scale = map_scale / mapstuff.SCALE_FACTOR
+			size = image_size * map_scale
+			if ui.isImageReady(current_map) then
+				first = false
+			end
 		end
-	end
+
+		ui.drawImage(current_map, -offsets, -offsets + size)
+
+		if ui.windowHovered() then --zoom&drag
+			if ac.getUI().mouseWheel ~= 0 then
+			  if 
+			  (	ac.getUI().mouseWheel < 0 and (size.x + padding.x > ui.windowWidth() and size.y + padding.y > ui.windowHeight())) 
+				or ac.getUI().mouseWheel > 0 then
+				local old = size
+				map_scale = map_scale * (1 + ac.getUI().mouseWheel * 0.15)
+				size = ui.imageSize(current_map) * map_scale
+				config_scale = map_scale / mapstuff.SCALE_FACTOR
+				offsets = (offsets + (size - old) * (offsets + ui.mouseLocalPos()) / old)
+			  else
+				offsets = -padding * 0.5
+				map_scale = math.min((ui.windowWidth() - padding.x) / image_size.x,(ui.windowHeight() - padding.y) / image_size.y)
+				size = ui.imageSize(current_map) * map_scale
+				config_scale = map_scale / mapstuff.SCALE_FACTOR
+			  end
+			end
+		  end
+
+		--other ppl pos
+		for i = ac.getSim().carsCount - 1, 1, -1 do --draw stuff on map
+			local car = ac.getCar(i)
+			if car.isConnected and (not car.isHidingLabels) then
+				local pos3 = car.position
+				local dir3 = car.look
+
+				pos2:set(pos3.x, pos3.z):add(config_offset):scale(config_scale):add(-offsets)
+				dir2:set(dir3.x, dir3.z) -- = vec2(dir3.x, dir3.z)
+				dir2x:set(dir3.z, -dir3.x)
+				ui.drawTriangleFilled(
+					pos2 + dir2 * ts,
+					pos2 - dir2 * ts - dir2x * ts * 0.75,
+					pos2 - dir2 * ts + dir2x * ts * 0.75,
+					rgbm(255,0,0,255))
+				ui.dwriteDrawText(ac.getDriverName(i),10,pos2 + vec2(25,5) - ui.measureText(ac.getDriverName(i)) * 0.5,rgbm.colors.	white)
+			end
+		end
+
+		--camera pos and local user 
+		pos3 = ac.getCameraPosition()
+		pos2:set(pos3.x, pos3.z):add(config_offset):scale(config_scale):add(-offsets)
+		dir3 = ac.getCameraForward()
+		dir2 = vec2(dir3.x, dir3.z):normalize()
+		dir2x:set(dir3.z, -dir3.x):normalize()
+		ui.drawTriangleFilled(
+			pos2 + dir2 * ts,
+			pos2 - dir2 * ts - dir2x * ts * 0.75,
+			pos2 - dir2 * ts + dir2x * ts * 0.75,
+			rgbm(0, 255, 0, 255))
+		if ui.keyPressed(ui.Key.Space) and ui.windowHovered() then
+			local camerapos = (ui.mouseLocalPos() + offsets) / config_scale - config_offset
+			local raycast = physics.raycastTrack(vec3(camerapos.x, 2000, camerapos.y), vec3(0, -1, 0), 3000)
+			local cameraheight = 2000 - raycast + 3
+			if raycast ~= -1 then
+				ac.setCurrentCamera(ac.CameraMode.Free)
+				ac.setCameraPosition(vec3(camerapos.x, cameraheight, camerapos.y))
+			end
+		end
+
+		ui.invisibleButton('###ba22', ui.windowSize())
+		if ui.mouseDown() and ui.itemHovered() then offsets = offsets - ui.mouseDelta() end
+	end)
 end
 
 local function DoTeleport() --simplest teleport function ever
@@ -145,22 +195,28 @@ local function DoTeleport() --simplest teleport function ever
 end
 
 function script.update(dt)
-	if timer >= 0 then -- timer for anything to go
-		timer = timer - dt
+	if timer.running >= 0 then -- timer for anything to go
+		timer.running = timer.running - dt
 	end
 
-	if ui.keyboardButtonPressed(CameraKey.v) and timer <= 0 then
+	if ui.keyboardButtonPressed(CameraKey.v) and timer.running <= 0 then
 		DoTeleport()
-		timer = 3
+		timer.running = timer.length
 	end
 end
 
 function script.drawUI()
 	if OverlayTimerKey == true then
 		ui.transparentWindow("Keyandabindandacooldown", vec2(-15, -5), vec2(150, 150), false, function()
-			ui.text("Key: " .. CameraKey.n .. "\nCooldown: " .. math.round(timer, 1))
+			ui.text("Key: " .. CameraKey.n .. "\nCooldown: " .. math.round(timer.running, 1))
 		end)
 	end
 end
 
-ui.registerOnlineExtra(ui.Icons.Compass, "Manual Teleport Menu", nil, Teleportation, nil, ui.OnlineExtraFlags.Tool)
+ui.registerOnlineExtra(	ui.Icons.Compass,
+						"Manual Teleport Menu",
+						nil,
+						Teleportation,
+						nil,
+						ui.OnlineExtraFlags.Tool,
+						ui.WindowFlags.NoScrollWithMouse)

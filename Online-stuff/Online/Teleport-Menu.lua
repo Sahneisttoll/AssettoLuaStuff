@@ -190,8 +190,8 @@ end
 local function DoTeleport() --simplest teleport function ever
 	local teleportPoint = ac.getCameraPosition()
 	local TeleportAngle = ac.getCameraForward()
-	physics.setCarPosition(0, teleportPoint, -TeleportAngle)
 	physics.setCarVelocity(0, vec3(0, 0, 0))
+	physics.setCarPosition(0, teleportPoint, -TeleportAngle)
 end
 
 function script.update(dt)

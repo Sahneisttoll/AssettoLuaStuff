@@ -1,10 +1,11 @@
 --[[
-	this whole ass file is just  so i dont have to dig 
-	thru my random shit and figure out how i made it again
+this whole ass file is just  so i dont have to dig 
+thru my random shit and figure out how i made it again
 --]]
 
 
---[[	SLIDERS EZZ
+--[[	
+SLIDERS EZZ
 //////////////////////////////////////////
 --]]
 
@@ -22,7 +23,8 @@ end
 
 
 
---[[	button to set keybinds
+--[[
+button to set keybinds
 //////////////////////////////////////////
 --]]
 
@@ -54,5 +56,42 @@ if keybrd.value == 0 then
 	end
 end
 --[[
+//////////////////////////////////////////
+--]]
+
+
+--[[	
+Color Picker Shortend HARD
+Ripped Straight from Paintshop
+NO color pallete
+//////////////////////////////////////////
+--]]
+
+local stored = ac.storage({
+	color = rgbm(0, 0.2, 1, 0.5),
+})
+
+
+local editing = false
+local colorFlags = bit.bor(
+	ui.ColorPickerFlags.NoAlpha,
+	ui.ColorPickerFlags.NoSidePreview,
+	ui.ColorPickerFlags.PickerHueWheel,
+	ui.ColorPickerFlags.DisplayHex)
+
+local function ColorBlock(key)
+	key = key or "color"
+	local col = stored[key]:clone()
+	ui.colorPicker("##color", col, colorFlags)
+	if ui.itemEdited() then
+		stored[key] = col
+		editing = true
+	elseif editing and not ui.itemActive() then
+		editing = false
+	end
+	ui.newLine()
+end
+
+--[[	
 //////////////////////////////////////////
 --]]

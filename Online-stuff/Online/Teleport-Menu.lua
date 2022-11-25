@@ -30,8 +30,8 @@ function keybindtp() --first tab
 	if
 		ui.button(
 			CameraKey.v == 0 and "Press a Key."
-				or (CameraKey.v == -1 and "Click to Set Key" or (CameraKey.v >= 1 and "Selected key: " .. CameraKey.n))
-		)
+			or (CameraKey.v == -1 and "Click to Set Key" 
+			or (CameraKey.v >= 1 and "Selected key: " .. CameraKey.n)))
 	then
 		CameraKey.v = 0
 	end

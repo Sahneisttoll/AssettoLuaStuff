@@ -9,18 +9,37 @@ SLIDERS EZZ
 //////////////////////////////////////////
 --]]
 
-local value = {} --to keep changes, do not have it in script.* or it will generate a new table every dt
+local value = {} --ac.storage({}) --to keep changes, do not have it in script.* or it will generate a new table every dt
 
 local slidervalue,changed = ui.slider("###1", value.slider, 0, 10, "Thing: %.0f", 1)
 
 if changed then
 	value.slider = slidervalue --assign slider value into a table key 
-	physics.setsomething(0, value.slider) --use either slider value or the table key
+	thingtochange = slidervalue
 end
+-- //////////////////////////////////////////
+
+
 --[[
+Different ways for Checkboxes
 //////////////////////////////////////////
 --]]
 
+-- not in functions
+local Checkbox = refbool(true/false)
+-- in functions
+ui.checkbox('Checkbox', Checkbox)
+-- then to turn on with button do inside
+if Checkbox.value == true then
+end
+
+-- or this one ive been using 24/7 taken from csp lua sdk
+if ui.checkbox('My checkbox', myFlag) then
+	myFlag = not myFlag
+end
+if myflag then
+end
+-- //////////////////////////////////////////
 
 
 --[[
@@ -55,9 +74,7 @@ if keybrd.value == 0 then
 		end
 	end
 end
---[[
-//////////////////////////////////////////
---]]
+-- //////////////////////////////////////////
 
 
 --[[	
@@ -91,7 +108,4 @@ local function ColorBlock(key)
 	end
 	ui.newLine()
 end
-
---[[	
-//////////////////////////////////////////
---]]
+-- //////////////////////////////////////////

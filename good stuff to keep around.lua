@@ -10,12 +10,19 @@ SLIDERS EZZ
 --]]
 
 local value = {} --ac.storage({}) --to keep changes, do not have it in script.* or it will generate a new table every dt
-
-local slidervalue,changed = ui.slider("###1", value.slider, 0, 10, "Thing: %.0f", 1)
+value.slider = 0
+value.slider2 = 0
+local slider , changed = ui.slider("###1", value.slider, 0, 10, "Thing: %.0f", 1)
 
 if changed then
-	value.slider = slidervalue --assign slider value into a table key 
-	thingtochange = slidervalue
+	value.slider2 = slider --assign slider value into a table key 
+	other = slider
+end
+
+--or
+local slider = ui.slider("###1", value.slider2, 0, 10, "Thing: %.0f", 1)
+if slider then
+	value.slider2 = slider
 end
 -- //////////////////////////////////////////
 

@@ -1,8 +1,17 @@
+CameraKey = ac.storage({
+	v = -1, --key value for ac
+	n = "", --key name for user
+	showtp = false,
+})
+
 local timer = {
 	running = 0,	--we move length/blength into here
 	length = 3,		--the normal length after teleporting
-	blength = 0.5	--length after setting a button
+	blength = 0.5,	--length after setting a button
 }
+
+local tpdistance = 8
+
 
 
 --Menu
@@ -18,14 +27,18 @@ local function Teleportation()
 end
 
 
-CameraKey = ac.storage({
-	v = -1, --key value for ac
-	n = "", --key name for user
-	x = 0, --x pos for overlay pos soon
-	y = 0, --x pos for overlay pos soon
-})
 function keybindtp() --first tab
 	ui.text("Teleport to Camera")
+
+	local distanceslider , tpbool = ui.slider("###tpdistance", tpdistance, 0, 20, "TP Distance: %.0f Meters", 1)
+	if tpbool then
+		tpdistance = distanceslider
+	end
+
+	if ui.checkbox("Show TP destination when holding down TP button", CameraKey.showtp) then
+		CameraKey.showtp = not CameraKey.showtp
+	end
+
 	--Toggles Button and starts the key listening
 	if
 		ui.button(
@@ -107,8 +120,11 @@ if ac.getPatchVersionCode() >= 2000 then
 end
 
 function Mapthing()
-	ui.text("Press Spacebar while on map to teleport the Camera.\nGreen for Camera/You.\nRed for other users.")
-	ui.childWindow("##LOL", vec2(ui.availableSpaceX(), ui.availableSpaceY()),
+	ui.text([[
+Press Spacebar while on map to teleport the Camera | You can Drag and zoom into the map. (zoom completely out of it bugged)
+Green = Camera/You
+Red = other users.]])
+	ui.childWindow("##mapforcamera", vec2(ui.availableSpaceX(), ui.availableSpaceY()),
 	function()
 		if ac.getPatchVersionCode() < 2000 then ui.text("only above ver 2000 it work") return end
 
@@ -182,7 +198,7 @@ function Mapthing()
 			end
 		end
 
-		ui.invisibleButton('###ba22', ui.windowSize())
+		ui.invisibleButton('###mapforcamera4242', ui.windowSize())
 		if ui.mouseDown() and ui.itemHovered() then offsets = offsets - ui.mouseDelta() end
 	end)
 end
@@ -191,7 +207,7 @@ local function DoTeleport() --simplest teleport function ever
 	local teleportPoint = ac.getCameraPosition()
 	local TeleportAngle = ac.getCameraForward()
 	physics.setCarVelocity(0, vec3(0, 0, 0))
-	physics.setCarPosition(0, teleportPoint, -TeleportAngle)
+	physics.setCarPosition(0, teleportPoint + vec3(0,-1,0) + TeleportAngle * tpdistance, -TeleportAngle * vec3(1,0,1))
 end
 
 function script.update(dt)
@@ -199,7 +215,7 @@ function script.update(dt)
 		timer.running = timer.running - dt
 	end
 
-	if ui.keyboardButtonPressed(CameraKey.v) and timer.running <= 0 then
+	if ui.keyboardButtonReleased(CameraKey.v) and timer.running <= 0 then
 		DoTeleport()
 		timer.running = timer.length
 	end
@@ -212,6 +228,22 @@ function script.drawUI()
 		end)
 	end
 end
+
+function script.draw3D()
+	if CameraKey.showtp and ui.keyboardButtonDown(CameraKey.v) then
+	render.setBlendMode(render.BlendMode.Opaque)
+	render.setCullMode(render.CullMode.Wireframe)
+	render.setDepthMode(render.DepthMode.ReadOnlyLessEqual)
+		local campos = ac.getCameraPosition()
+		local camlook = ac.getCameraForward()
+		campos = vec3(campos + vec3(0,-1,0) + camlook * tpdistance)
+		camlook = vec3(0, 1, 0)*camlook
+		--physics.setCarVelocity(0, vec3(0, 0, 0))
+		--physics.setCarPosition(0, campos + vec3(0,-1,0) + camlook * 6, -camangle)
+		render.debugPlane(campos,camlook,rgbm(1, 1, 1, 1),1)
+	end
+end
+
 
 ui.registerOnlineExtra(	ui.Icons.Compass,
 						"Manual Teleport Menu",

@@ -13,11 +13,12 @@ local mem = ac.storage({
 })
 
 local function savepos1()
-	mem.pos = ac.getCar(0).position
-	mem.dir = ac.getCar(0).look
-	mem.vel = ac.getCar(0).velocity
-	mem.gear = ac.getCar(0).gear
-	mem.rpm = ac.getCar(0).rpm
+	local car = ac.getCar(0)
+	mem.pos = car.position
+	mem.dir = car.look
+	mem.vel = car.velocity
+	mem.gear = car.gear
+	mem.rpm = car.rpm
 end
 
 local function loadpos1()
@@ -102,7 +103,7 @@ local function tab2()
 	if ui.checkbox("TP to Cam", keybindermouse) then
 		keybindermouse = not keybindermouse
 	end
-	if keybindermouse == true and ui.keyPressed(ui.Key.Home) then
+	if keybindermouse == true and ui.keyPressed(ui.Key.Insert) then
 		TeleportCam()
 		mem.keybindtext = "TP to Cam"
 	end

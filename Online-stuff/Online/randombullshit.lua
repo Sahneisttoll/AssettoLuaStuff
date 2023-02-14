@@ -123,18 +123,11 @@ local function tab2()
 	ui.text("last interaction: " .. mem.keybindtext)
 end
 
-local function tab25()
-	if ui.checkbox("kebab", nwind) then
-		nwind = nwind
-		ac.setMessage("Obama has overtaken", "the middle east")
-	end
-end
 
 local function RDMBULLSHITHud()
 	ui.tabBar("sabcar", function()
 		ui.tabItem("AI", tab1)
 		ui.tabItem("TP", tab2)
-		ui.tabItem("Testing", tab25)
 	end)
 end
 ui.registerOnlineExtra(ui.Icons.Crosshair, "RDMBULLSHIT", nil, RDMBULLSHITHud, nil, ui.OnlineExtraFlags.Tool)

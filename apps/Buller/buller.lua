@@ -206,11 +206,11 @@ local function randomkeybuttonpress()
 end 
 ------------------------------------------------------------------------------------------------------------------------------------
 
-local alpha = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\MINIMAP_MASK.dds"
-local mapFilename = ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/map.png"
-local debugtexture = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\debug.png"
-local carico = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\MINIMAP_ICON_CAR.dds"
-local mapParams = ac.INIConfig.load(ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"):mapSection("PARAMETERS", 
+local alpha 		= ac.getFolder(ac.FolderID.ACApps) 	.. "\\lua\\buller\\MINIMAP_MASK.dds"
+local mapFilename 	= ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/map.png"
+local debugtexture 	= ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\debug.png"
+local carico 		= ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\MINIMAP_ICON_CAR.dds"
+local mapParams 	= ac.INIConfig.load(ac.getFolder(ac.FolderID.ContentTracks) .. "/" .. ac.getTrackFullID("/") .. "/data/map.ini"):mapSection("PARAMETERS", 
 {
 	SCALE_FACTOR=0,
 	X_OFFSET = 0, -- by providing default values script also specifies type, so that values can be parsed properly
@@ -312,10 +312,10 @@ toscale128.extrapolate = true
 toscale256.extrapolate = true
 
 
-local N20Image = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\test25.dds" 
-local test26 = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\test26.dds" 
-local test27 = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\test27.dds" 
-local METER_BACKING2 = ac.getFolder(ac.FolderID.ACApps) .. "\\lua\\buller\\METER_BACKING2.dds" 
+local N20Image 			= ac.dirname() .. "test25.dds" 
+local test26 			= ac.dirname() .. "test26.dds" 
+local test27 			= ac.dirname() .. "test27.dds" 
+local METER_BACKING2 	= ac.dirname() .. "METER_BACKING2.dds" 
 
 
 local n20lut = ac.DataLUT11():add(0,3.21):add(100,6.22)

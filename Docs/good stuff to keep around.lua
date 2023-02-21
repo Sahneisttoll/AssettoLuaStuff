@@ -151,3 +151,34 @@ local function newnames()
 	Toggle = Button
 end
 --#endregion
+
+--#region [[Car Physics thing]]
+-- 	if car.gas < 0.01 and car.speedKmh < 10 then do "engine off" thing
+local westanding = false
+function script.update(dt)
+	ac.debug("a",dt * 4500)
+	if car.gas < 0.01 
+	and car.speedKmh < 10 
+	then
+	  setTimeout(
+	   function () westanding = true end,
+	   3, --delay
+	   "UniqueKey") --UniqueKey for clearing
+	elseif car.gas > 0.01 then
+		clearTimeout("UniqueKey")
+		westanding = false
+	end
+
+	if westanding == true then
+		ac.accessCarPhysics().clutch = 0
+		ac.setEngineRPM(car.rpm - (15))
+	end
+end
+--#endregion
+
+--#region [[for importing images or other]]
+local thing = ac.dirname() .. "image.dds"
+local thing = ac.dirname() .. "\\folderdeeper\\image.dds"
+local luathing = ac.dirname() .. "\\otherfolderinsideofapp\\thing.lua"
+require(luathing)--could work?
+--#endregion

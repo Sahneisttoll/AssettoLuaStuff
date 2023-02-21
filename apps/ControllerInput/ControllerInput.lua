@@ -1,28 +1,21 @@
 -- ui.drawCircle() 16 radius = 64 pixel radius = 128 diameter
 
 settings = ac.storage({
-	Color = rgbm(0, 0, 0, 0.2),
+	BackgroundColor = rgbm(0, 0, 0, 0.2),
 	CustomPos = false,
 	positionX = 0,
 	positionY = 0,
 })
 
-
-
-
-local ds5 = {
-	Circle		= ac.dirname() .. "\\ds5\\Circle.png",
-	Cross		= ac.dirname() .. "\\ds5\\Cross.png",
-	Square		= ac.dirname() .. "\\ds5\\Square.png",
-	Triangle 	= ac.dirname() .. "\\ds5\\Triangle.png",
-}
-
 local editing = false
-local trueedit = false
+
+local EditingBG 	= false
+local EditingMain 	= false
+
 local colorFlags = bit.bor(ui.ColorPickerFlags.NoSidePreview, ui.ColorPickerFlags.PickerHueWheel)
 
 local function ColorBlock(input)
-	input = input or "Color"
+	input = input or "tempcolor"
 	local col = settings[input]:clone()
 	ui.colorPicker("##color", col, colorFlags)
 	if ui.itemEdited() then
@@ -53,102 +46,115 @@ function ControllerInputSettings()
 		end
 	end
 
+
 	if ui.button("Edit Background") then
-		if trueedit ~= true then
-			trueedit = true
-		else
-			trueedit = false
-		end
-	end
-	if trueedit then
-		ColorBlock(Color)
+			EditingBG = not EditingBG
 	end
 
-
-
+	if EditingBG then
+		ColorBlock("BackgroundColor")
+	end
 end
+
+
+
+local ds5 = {
+	Circle		= ac.dirname() .. "\\ds5\\Circle.png",
+	Cross		= ac.dirname() .. "\\ds5\\Cross.png",
+	Square		= ac.dirname() .. "\\ds5\\Square.png",
+	Triangle 	= ac.dirname() .. "\\ds5\\Triangle.png",
+}
 
 local StickLut = ac.DataLUT11():add(0, 0):add(1, 64)
 StickLut.extrapolate = true
 
-local TriggerLut = ac.DataLUT11():add(0, math.rad(180)):add(1, math.rad(360))
+local TriggerStart = math.rad(180)
+local TriggerEnd = math.rad(360)
+local TriggerLut = ac.DataLUT11():add(0, TriggerStart):add(1, TriggerEnd)
 TriggerLut.extrapolate = true
+
+LeftStickMiddle 	= vec2(80, 80)
+RightStickMiddle 	= vec2(240, 80)
+
+local FacebuttonSpace = 37
+local MainColor = rgbm(1,1,1,0.8)
+local SecondColor = rgbm(1,1,1,0.25)
 
 
 function Controller()
-	ui.drawRectFilled(0, AppSize, settings.Color, 5, nil)
-	
+	ui.drawRectFilled(0, AppSize, settings.BackgroundColor, 5, nil)
+
 	--#region [[FaceButtons]]
-	ui.setCursor(RightStickMiddle-32+vec2(32,0))
-	if ac.isGamepadButtonPressed(4,ac.GamepadButton.B) then
-		ui.image(ds5.Circle, 64, rgbm(1,1,1,1), nil, nil, nil, nil)
+	--right
+	ui.setCursor(RightStickMiddle - 32 + vec2(FacebuttonSpace, 0))
+	if ac.isGamepadButtonPressed(4, ac.GamepadButton.B) then
+		ui.image(ds5.Circle, 64, MainColor)
 	else
-		ui.image(ds5.Circle, 64, rgbm(1,1,1,0.25), nil, nil, nil, nil)
+		ui.image(ds5.Circle, 64, SecondColor)
 	end
-	ui.setCursor(RightStickMiddle-32+vec2(0,32))
-	if ac.isGamepadButtonPressed(4,ac.GamepadButton.A) then
-		ui.image(ds5.Cross, 64, rgbm(1,1,1,1), nil, nil, nil, nil)
+	--bottom
+	ui.setCursor(RightStickMiddle - 32 + vec2(0, FacebuttonSpace))
+	if ac.isGamepadButtonPressed(4, ac.GamepadButton.A) then
+		ui.image(ds5.Cross, 64, MainColor)
 	else
-		ui.image(ds5.Cross, 64, rgbm(1,1,1,0.25), nil, nil, nil, nil)
+		ui.image(ds5.Cross, 64, SecondColor)
 	end
-	ui.setCursor(RightStickMiddle-32+vec2(-32,0))
-	if ac.isGamepadButtonPressed(4,ac.GamepadButton.X) then
-		ui.image(ds5.Square, 64, rgbm(1,1,1,1), nil, nil, nil, nil)
+	--left
+	ui.setCursor(RightStickMiddle - 32 + vec2(-FacebuttonSpace, 0))
+	if ac.isGamepadButtonPressed(4, ac.GamepadButton.X) then
+		ui.image(ds5.Square, 64, MainColor)
 	else
-		ui.image(ds5.Square, 64, rgbm(1,1,1,0.25), nil, nil, nil, nil)
+		ui.image(ds5.Square, 64, SecondColor)
 	end
-	ui.setCursor(RightStickMiddle-32+vec2(0,-32))
-	if ac.isGamepadButtonPressed(4,ac.GamepadButton.Y) then
-		ui.image(ds5.Triangle, 64, rgbm(1,1,1,1), nil, nil, nil, nil)
+	--top
+	ui.setCursor(RightStickMiddle - 32 + vec2(0, -FacebuttonSpace))
+	if ac.isGamepadButtonPressed(4, ac.GamepadButton.Y) then
+		ui.image(ds5.Triangle, 64, MainColor)
 	else
-		ui.image(ds5.Triangle, 64, rgbm(1,1,1,0.25), nil, nil, nil, nil)
+		ui.image(ds5.Triangle, 64, SecondColor)
 	end
 	--#endregion
 
 	--#region [[Middle of Sticks]]
-	ui.drawLine(LeftStickMiddle-vec2(64,0),LeftStickMiddle+vec2(64,0),rgbm(1,1,1,0.2),1)
-	ui.drawLine(LeftStickMiddle-vec2(0,64),LeftStickMiddle+vec2(0,64),rgbm(1,1,1,0.2),1)
-	ui.drawLine(RightStickMiddle-vec2(64,0),RightStickMiddle+vec2(64,0),rgbm(1,1,1,0.2),1)
-	ui.drawLine(RightStickMiddle-vec2(0,64),RightStickMiddle+vec2(0,64),rgbm(1,1,1,0.2),1)
+	ui.drawLine(LeftStickMiddle - vec2(64, 0), LeftStickMiddle + vec2(64, 0), rgbm(1, 1, 1, 0.1), 1)
+	ui.drawLine(LeftStickMiddle - vec2(0, 64), LeftStickMiddle + vec2(0, 64), rgbm(1, 1, 1, 0.1), 1)
+	ui.drawLine(RightStickMiddle - vec2(64, 0), RightStickMiddle + vec2(64, 0), rgbm(1, 1, 1, 0.1), 1)
+	ui.drawLine(RightStickMiddle - vec2(0, 64), RightStickMiddle + vec2(0, 64), rgbm(1, 1, 1, 0.1), 1)
 	--#endregion
 
 	--#region [[Axis]]
 	--left trigger
-	ui.pathArcTo(LeftStickMiddle, 72, math.rad(180), math.rad(360), 32)
-	ui.pathStroke(rgbm.colors.white, false, 5)
-	ui.pathArcTo(LeftStickMiddle, 72, math.rad(180), LT, 32)
-	ui.pathStroke(rgbm(1,0,0,1), false, 5)
+	ui.pathArcTo(LeftStickMiddle, 72, TriggerStart, TriggerEnd, 32)
+	ui.pathStroke(rgbm(1, 1, 1, 0.3), false, 5)
+	ui.pathArcTo(LeftStickMiddle, 72, TriggerStart, LT, 32)
+	ui.pathStroke(rgbm(1, 0, 0, 0.8), false, 5)
 	--right trigger
-	ui.pathArcTo(RightStickMiddle, 72,  math.rad(180), math.rad(360), 32)
-	ui.pathStroke(rgbm.colors.white, false, 5)
-	ui.pathArcTo(RightStickMiddle, 72, math.rad(180), RT, 32)
-	ui.pathStroke(rgbm(0,1,0,1), false, 5)
+	ui.pathArcTo(RightStickMiddle, 72, TriggerStart, TriggerEnd, 32)
+	ui.pathStroke(rgbm(1, 1, 1, 0.3), false, 5)
+	ui.pathArcTo(RightStickMiddle, 72, TriggerStart, RT, 32)
+	ui.pathStroke(rgbm(0, 1, 0, 0.8), false, 5)
 	-- LeftStick
-	ui.drawCircle(LeftStickMiddle, 64, rgbm(1, 1, 1, 1), 32, 2)
-	ui.drawCircle(LeftStickMiddle + vec2(RealSteering, 0), 4, rgbm(1, 0, 0, 1), 8, 2)
-	ui.drawCircle(LeftStickMiddle + vec2(LSX, LSY), 22, rgbm(1, 1, 1, 1), 24, 2)
-	ui.drawCircle(LeftStickMiddle + vec2(LSX, LSY), 2, rgbm(1, 1, 1, 1), 4, 2)
+	ui.drawCircle(LeftStickMiddle, 64, MainColor, 32, 2)
+	ui.drawCircleFilled(LeftStickMiddle + vec2(LSX, LSY), 22, MainColor, 24)
+	ui.drawCircleFilled(LeftStickMiddle + vec2(RealSteering, 0), 4, rgbm(1, 0, 0, 0.8), 24)
+
 	--RightStick
-	ui.drawCircle(RightStickMiddle + vec2(RSX, RSY), 22, rgbm(1, 1, 1, 1), 24, 2)
-	ui.drawCircle(RightStickMiddle + vec2(RSX, RSY), 2, rgbm(1, 1, 1, 1), 4, 2)
-	ui.drawCircle(RightStickMiddle, 64, rgbm(1, 1, 1, 1), 32, 2)
+	ui.drawCircleFilled(RightStickMiddle + vec2(RSX, RSY), 22, MainColor, 24)
+	ui.drawCircle(RightStickMiddle, 64, MainColor, 32, 2)
 	--#endregion
 end
 
+sim = ac.getSim()
+car = ac.getCar(0)
+GameSize = vec2(sim.windowWidth, sim.windowHeight)
+
 function ControllerInput()
-	sim = ac.getSim()
-	car = ac.getCar(0)
-	GameSize = vec2(sim.windowWidth, sim.windowHeight)
 	--#region [[App Size]]
 	AppPos = ui.windowPos()
 	AppSize = ui.windowSize()
 	--#endregion
 	
 	--pos stuff
-	LeftStickMiddle 	= vec2(80, 86)
-	RightStickMiddle 	= vec2(240, 86)
-
-
 	--leftstick
 	LSX = ac.getGamepadAxisValue(4, ac.GamepadAxis.LeftThumbX)
 	LSY = ac.getGamepadAxisValue(4, ac.GamepadAxis.LeftThumbY)
@@ -168,11 +174,9 @@ function ControllerInput()
 	LT = TriggerLut:get(LT)
 	RT = TriggerLut:get(RT)
 
-	if trueedit == true and settings.CustomPos == false then
+	if EditingBG == true and settings.CustomPos == false then
 		AppPos = AppPos + vec2(0,AppSize.y)
-	elseif trueedit == false and settings.CustomPos == true then
-		AppPos = vec2(settings.positionX,settings.positionY)
-	elseif trueedit == true and settings.CustomPos == true then
+	elseif EditingBG == true or EditingBG == false and settings.CustomPos == true then
 		AppPos = vec2(settings.positionX,settings.positionY)
 	end
 	ui.transparentWindow("##ATransparentWindow", AppPos, AppSize,Controller)

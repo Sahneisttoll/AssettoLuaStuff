@@ -113,7 +113,7 @@ local function LeMeincraftESP()
 					local Origin = focusedCar.position + vec3(0, focusedCar.aabbSize.y, 0)
 
 					if settings.MinecraftESPFromCam ~= false then
-						Origin = sim.cameraPosition + sim.cameraLook - sim.cameraUp
+						Origin = sim.cameraPosition + sim.cameraLook*2 + sim.cameraUp
 					end
 
 
@@ -161,7 +161,7 @@ local function LeMeincraftESP()
 end
 
 
-function script.SahneExtra()
+local function MEINKAMPFESP()
 	if ui.button(settings.MinecraftESP == true and "Minecraft ESP on" or settings.MinecraftESP == false and "Minecraft ESP off") then
 		settings.MinecraftESP = not settings.MinecraftESP
 	end
@@ -193,6 +193,42 @@ function script.SahneExtra()
 	end
 end
 
+
+
+sim = ac.getSim()
+local Replaylut = ac.DataLUT11():add(0,0):add(1,sim.replayFrameMs-0.001)
+Replaylut.extrapolate = true
+
+local function replaything()
+	if ac.isInReplayMode() then
+		local sim = ac.getSim()
+		local HowManyFrames 		= sim.replayFrames
+		local CurrentFrameLocation 	= sim.replayCurrentFrame
+		ac.debug("2",sim.replayFrameMs)
+		ui.setNextItemWidth(ui.windowWidth()-30)
+		local MainFramesSlider, MainFramesOn = ui.slider("##MainFrame", CurrentFrameLocation, 0, HowManyFrames, "Current Frame: %.5f", 1)
+
+		local integer, dec = string.match(tostring(MainFramesSlider), "([^.]+)%.(.+)")
+		
+		dec 	= tostring(dec)
+		dec 	= "0." .. dec
+		dec 	= tonumber(dec)
+		dec 	= Replaylut:get(dec)
+
+		if MainFramesOn then
+			ac.setReplayPosition(MainFramesSlider,dec)
+		end
+
+	end
+end
+
+function script.SahneExtra()
+	ui.tabBar("##Bracked",function ()
+		ui.tabItem("ESP",MEINKAMPFESP)
+		ui.tabItem("Replay?",replaything)
+	end)
+end
+
 function script.fullscreenUI()
 	DriverNamesToggle()
 	DriverNames()
@@ -212,6 +248,9 @@ function script.draw3D()
 	end
 end
 
+
+
+
 ac.setLogSilent(true)
 local function yeet()
 	if io.dirExists(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\") ~= true then
@@ -221,14 +260,18 @@ local function yeet()
 	local sim = ac.getSim()
 	if sim.isOnlineRace == true then
 		print("we online")
-		local LeIp = tostring(ac.getServerIP())
+		local Name = ac.getServerName()
+		local LeIp = ac.getServerIP()
+		local LePort = ac.getServerPortTCP()
+		local Server = tostring(Name.."_"..LeIp.."_"..LePort)
 		ServerCfg = ac.INIConfig.onlineExtras()
+		ac.debug("ServerCfg",ServerCfg)
 		if ServerCfg ~= nil then
 			print("saving server ceefg")
-			io.save(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\" .. LeIp .. ".ini" ,ServerCfg)
+			io.save(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\" .. Server .. ".ini" ,ServerCfg)
 		end
+		print("end")
 	end
-	print("end")
 end
 
 yeet()

@@ -71,12 +71,13 @@ end
 local StickLut = ac.DataLUT11():add(0, 0):add(1, 64)
 StickLut.extrapolate = true
 
-local TriggerLut = ac.DataLUT11():add(0, 3):add(1, 6.43)
+local TriggerLut = ac.DataLUT11():add(0, math.rad(180)):add(1, math.rad(360))
 TriggerLut.extrapolate = true
 
 
 function Controller()
 	ui.drawRectFilled(0, AppSize, settings.Color, 5, nil)
+	
 	--#region [[FaceButtons]]
 	ui.setCursor(RightStickMiddle-32+vec2(32,0))
 	if ac.isGamepadButtonPressed(4,ac.GamepadButton.B) then
@@ -113,21 +114,20 @@ function Controller()
 
 	--#region [[Axis]]
 	--left trigger
-	ui.pathArcTo(LeftStickMiddle, 75, 3, 6.43, 32)
+	ui.pathArcTo(LeftStickMiddle, 72, math.rad(180), math.rad(360), 32)
 	ui.pathStroke(rgbm.colors.white, false, 5)
-	ui.pathArcTo(LeftStickMiddle, 75, 3, LT, 32)
+	ui.pathArcTo(LeftStickMiddle, 72, math.rad(180), LT, 32)
 	ui.pathStroke(rgbm(1,0,0,1), false, 5)
 	--right trigger
-	ui.pathArcTo(RightStickMiddle, 75, 3, 6.43, 32)
+	ui.pathArcTo(RightStickMiddle, 72,  math.rad(180), math.rad(360), 32)
 	ui.pathStroke(rgbm.colors.white, false, 5)
-	ui.pathArcTo(RightStickMiddle, 75, 3, RT, 32)
+	ui.pathArcTo(RightStickMiddle, 72, math.rad(180), RT, 32)
 	ui.pathStroke(rgbm(0,1,0,1), false, 5)
 	-- LeftStick
 	ui.drawCircle(LeftStickMiddle, 64, rgbm(1, 1, 1, 1), 32, 2)
 	ui.drawCircle(LeftStickMiddle + vec2(RealSteering, 0), 4, rgbm(1, 0, 0, 1), 8, 2)
 	ui.drawCircle(LeftStickMiddle + vec2(LSX, LSY), 22, rgbm(1, 1, 1, 1), 24, 2)
 	ui.drawCircle(LeftStickMiddle + vec2(LSX, LSY), 2, rgbm(1, 1, 1, 1), 4, 2)
-
 	--RightStick
 	ui.drawCircle(RightStickMiddle + vec2(RSX, RSY), 22, rgbm(1, 1, 1, 1), 24, 2)
 	ui.drawCircle(RightStickMiddle + vec2(RSX, RSY), 2, rgbm(1, 1, 1, 1), 4, 2)

@@ -1,31 +1,32 @@
 settings = ac.storage({
-	ShowLeName 				= false,
-	MinecraftESP 			= false,
-	MinecraftESPWalling		= false,
-	MinecraftESPBoxes 		= false,
-	MinecraftESPLines 		= false,
-	MinecraftESPFromCam		= false,
-	MinecraftESPLinesDist	= 300,
-	MinecraftESPColor		= 0,
+	ShowLeName 		= false,
+	ESP 			= false,
+	ESP3D 			= false,
+	ESP2D 			= false,
+
+	ESP2DBoxes 		= false,
+	ESP2DLines 		= false,
+	ESP3DBoxes 		= false,
+	ESP3DLines 		= false,
+	ESP3DWallBetter	= false,
+	ESP3DFromCam	= false,
+	ESPMaxDist	= 300,
 })
 
-
+local sim = ac.getSim()
 
 local ToggleLeName = false
 local function DriverNamesToggle()
 	local Button = ac.isGamepadButtonPressed(4, ac.GamepadButton.Microphone)
-
 	--does magic that the button is only pressed once
 	if Button == ToggleLeName then
 		return
 	end
-
 	--do things in here
 	if Button == true then
 		settings.ShowLeName = not settings.ShowLeName
 		if settings.ShowLeName == true then ui.toast(ui.Icons.Bug, "Names Enabled") else ui.toast(ui.Icons.Bug, "Names Disabled") end
 	end
-
 	--does magic that the button is only pressed once
 	ToggleLeName = Button
 end
@@ -51,100 +52,86 @@ NameLutHeight.extrapolate = true
 local DistanceBetweenMeAndYou = 0
 local NameSize = 15
 local function DriverNames()
-	local sim = ac.getSim()
 	local focusedCar = ac.getCar(sim.focusedCar)
-	if settings.ShowLeName == true then
-		for i = 0, sim.carsCount - 1 do
-			local car = ac.getCar(i)
-			local driverName = ac.getDriverName(i)
-			if	car.isConnected
-				--[[and not car.isAIControlled]]
-				and not string.find(driverName, "Traffic")
-				and not string.find(driverName, ac.getDriverName(sim.focusedCar))
-			then
-				if sim.isFreeCameraOutside == true then
-					DistanceBetweenMeAndYou = math.distance(car.position, sim.cameraPosition)
-				else
-					DistanceBetweenMeAndYou = math.distance(car.position, focusedCar.position)
-				end
-				if DistanceBetweenMeAndYou < 100 then
-					local NameAlpha = Alpha:get(DistanceBetweenMeAndYou)
-					local extraheight = NameLutHeight:get(DistanceBetweenMeAndYou) + car.aabbSize.x
+	for i = 0, sim.carsCount - 1 do
+		local car = ac.getCar(i)
+		local driverName = ac.getDriverName(i)
+		if	car.isConnected
+			--[[and not car.isAIControlled]]
+			and not string.find(driverName, "Traffic")
+			and not string.find(driverName, ac.getDriverName(sim.focusedCar))
+		then
+			if sim.isFreeCameraOutside == true then
+				DistanceBetweenMeAndYou = math.distance(car.position, sim.cameraPosition)
+			else
+				DistanceBetweenMeAndYou = math.distance(car.position, focusedCar.position)
+			end
+			if DistanceBetweenMeAndYou < 100 then
+				local NameAlpha = Alpha:get(DistanceBetweenMeAndYou)
+				local extraheight = NameLutHeight:get(DistanceBetweenMeAndYou) + car.aabbSize.x
 
-					local screenpos = ui.projectPoint(car.position + vec3(0, extraheight, 0))
+				local screenpos = ui.projectPoint(car.position + vec3(0, extraheight, 0))
 
-					local textsize = ui.measureDWriteText(driverName, NameSize) / 2
-					ui.dwriteDrawText(driverName, NameSize, screenpos - textsize, rgbm(1, 1, 1, NameAlpha))
-				end
+				local textsize = ui.measureDWriteText(driverName, NameSize) / 2
+				ui.dwriteDrawText(driverName, NameSize, screenpos - textsize, rgbm(1, 1, 1, NameAlpha))
 			end
 		end
 	end
 end
 
-local function LeMeincraftESP()
-	local sim = ac.getSim()
-	local focusedCar = ac.getCar(sim.focusedCar)
-	local CarColor = rgbm(settings.MinecraftESPColor, settings.MinecraftESPColor, settings.MinecraftESPColor, settings.MinecraftESPColor)
-	
+
+local function ESP3D()
+	if settings.ESP3DLines or settings.ESP3DBoxes then
+		local focusedCar = ac.getCar(sim.focusedCar)
 		for i = 1, sim.carsCount - 1 do
 			local car = ac.getCar(i)
 			local driverName = ac.getDriverName(i)
 			local distance = math.distance(focusedCar.position, car.position)
 
-			if distance < settings.MinecraftESPLinesDist and car.isConnected then
-
-				if
-					car.isAIControlled
-					and not string.find(driverName, ac.getDriverName(sim.focusedCar))
-				then
+			if distance < settings.ESPMaxDist and car.isConnected then
+				local CarColor = rgbm(1, 1, 1, 1)
+				if car.isAIControlled and not string.find(driverName, ac.getDriverName(sim.focusedCar)) then
 					CarColor = rgbm(1, 1, 0, 1) -- blue ai car
 				end
 				if
-					string.find(driverName, "Traffic")
-					and not string.find(driverName, ac.getDriverName(sim.focusedCar))
+					string.find(driverName, "Traffic") and not string.find(driverName, ac.getDriverName(sim.focusedCar))
 				then
 					CarColor = rgbm(1, 0, 0, 1) -- red traffic
 				end
 
-
-
-				if settings.MinecraftESPLines == true then
-
+				if settings.ESP3DLines == true then
 					local Origin = focusedCar.position + vec3(0, focusedCar.aabbSize.y, 0)
-
-					if settings.MinecraftESPFromCam ~= false then
-						Origin = sim.cameraPosition + sim.cameraLook*2 + sim.cameraUp
+					if settings.ESP3DFromCam ~= false then
+						Origin = sim.cameraPosition + sim.cameraLook * 2 + sim.cameraUp
 					end
-
-
 					local Target = car.position + vec3(0, car.aabbSize.y, 0)
 
 					render.debugLine(Origin, Target, CarColor)
 				end
 
-				if settings.MinecraftESPBoxes == true then
+				if settings.ESP3DBoxes == true then
 
-					ac.debug("1 C "	..driverName	,car.aabbCenter)
-					ac.debug("2 S "	..driverName	,car.aabbSize)
+					--ac.debug("1 C "	..driverName	,car.aabbCenter)
+					--ac.debug("2 S "	..driverName	,car.aabbSize)
 
-					local FrontBack = (car.look * (car.aabbSize.x))
-					local Sides 	= (car.side * (car.aabbSize.x * 0.5))
+					local FrontBack = (car.look * car.aabbSize.x)
+					local Sides = (car.side * (car.aabbSize.x * 0.5))
+					local Up = (car.up * car.aabbSize.y)
 
-					local Lower_Top_Left 	= (car.position) + FrontBack + Sides
-					local Lower_Rear_Left 	= (car.position) - FrontBack + Sides
-					local Lower_Top_Right 	= (car.position) + FrontBack - Sides
-					local Lower_Rear_Right 	= (car.position) - FrontBack - Sides
+					local Lower_Top_Left = car.position + FrontBack + Sides
+					local Lower_Rear_Left = car.position - FrontBack + Sides
+					local Lower_Top_Right = car.position + FrontBack - Sides
+					local Lower_Rear_Right = car.position - FrontBack - Sides
+
+					local Upper_Top_Left = Lower_Top_Left + Up
+					local Upper_Rear_Left = Lower_Rear_Left + Up
+					local Upper_Top_Right = Lower_Top_Right + Up
+					local Upper_Rear_Right = Lower_Rear_Right + Up
 
 					render.debugLine(Lower_Top_Left, Lower_Rear_Left, CarColor)
 					render.debugLine(Lower_Top_Right, Lower_Rear_Right, CarColor)
 					render.debugLine(Lower_Top_Left, Lower_Top_Right, CarColor)
 					render.debugLine(Lower_Rear_Left, Lower_Rear_Right, CarColor)
-
-					local Up = (car.up * car.aabbSize.y)
-					local Upper_Top_Left 	= Lower_Top_Left   + Up
-					local Upper_Rear_Left 	= Lower_Rear_Left  + Up
-					local Upper_Top_Right 	= Lower_Top_Right  + Up
-					local Upper_Rear_Right 	= Lower_Rear_Right + Up
 
 					render.debugLine(Upper_Top_Left, Upper_Rear_Left, CarColor)
 					render.debugLine(Upper_Top_Right, Upper_Rear_Right, CarColor)
@@ -158,50 +145,131 @@ local function LeMeincraftESP()
 				end
 			end
 		end
+	end
+end
+
+local function Line(First, Second, CarColor, Thick)
+	return ui.drawLine(ui.projectPoint(First), ui.projectPoint(Second), CarColor, Thick)
 end
 
 
-local function MEINKAMPFESP()
-	if ui.button(settings.MinecraftESP == true and "Minecraft ESP on" or settings.MinecraftESP == false and "Minecraft ESP off") then
-		settings.MinecraftESP = not settings.MinecraftESP
-	end
-	if settings.MinecraftESP == true then
-		local Colere = ui.slider("##stegn",settings.MinecraftESPColor,0,25, 'Strength: %.0f',1)
-		if Colere then
-			settings.MinecraftESPColor = Colere
-		end
-		if ui.checkbox("Boxes",settings.MinecraftESPBoxes) then
-			settings.MinecraftESPBoxes = not settings.MinecraftESPBoxes
-		end
-		if ui.checkbox("Lines",settings.MinecraftESPLines) then
-			settings.MinecraftESPLines = not settings.MinecraftESPLines
-		end
-		if settings.MinecraftESPLines == true then
-			ui.sameLine(0,15)
-			if ui.checkbox("From Cam",settings.MinecraftESPFromCam) then
-				settings.MinecraftESPFromCam = not settings.MinecraftESPFromCam
+
+local function ESP2D()
+	if settings.ESP2DLines or settings.ESP2DBoxes then
+		local focusedCar = ac.getCar(sim.focusedCar)
+		for i = 1, sim.carsCount - 1 do
+			local car = ac.getCar(i)
+			local driverName = ac.getDriverName(i)
+			local distance = math.distance(focusedCar.position, car.position)
+			if sim.isFreeCameraOutside then
+				distance = math.distance(sim.cameraPosition, car.position)
+			end
+
+			if distance < settings.ESPMaxDist and car.isConnected then
+				local Alphaing = math.lerp(0, 1, math.lerpInvSat(distance, settings.ESPMaxDist * 0.7, 0))
+				local Thickness = math.lerp(0, 2, math.lerpInvSat(distance, settings.ESPMaxDist * 0.7, 0))
+				local CarColor = rgbm(1, 1, 1, Alphaing)
+
+				if car.isAIControlled and not string.find(driverName, ac.getDriverName(sim.focusedCar)) then
+					CarColor = rgbm(0, 1, 1, Alphaing) -- blue ai car
+				end
+
+				if
+					string.find(driverName, "Traffic") and not string.find(driverName, ac.getDriverName(sim.focusedCar))
+				then
+					CarColor = rgbm(1, 0, 0, Alphaing) -- red traffic
+				end
+
+				if settings.ESP2DLines == true then
+					local Target = car.position + vec3(0, car.aabbSize.y, 0)
+					ui.drawLine(vec2(sim.windowWidth / 2, -10), ui.projectPoint(Target), CarColor, 1)
+				end
+
+				if settings.ESP2DBoxes == true then
+					local FrontBack = (car.look * car.aabbSize.x)
+					local Sides	 	= (car.side * (car.aabbSize.x * 0.5))
+					local Up 		= (car.up * car.aabbSize.y)
+					local Lower_Top_Left = car.position + FrontBack + Sides
+					local Lower_Rear_Left = car.position - FrontBack + Sides
+					local Lower_Top_Right = car.position + FrontBack - Sides
+					local Lower_Rear_Right = car.position - FrontBack - Sides
+					local Upper_Top_Left = Lower_Top_Left + Up
+					local Upper_Rear_Left = Lower_Rear_Left + Up
+					local Upper_Top_Right = Lower_Top_Right + Up
+					local Upper_Rear_Right = Lower_Rear_Right + Up
+					Line(Lower_Top_Left, Lower_Rear_Left, CarColor, Thickness)
+					Line(Lower_Top_Right, Lower_Rear_Right, CarColor, Thickness)
+					Line(Lower_Top_Left, Lower_Top_Right, CarColor, Thickness)
+					Line(Lower_Rear_Left, Lower_Rear_Right, CarColor, Thickness)
+					Line(Upper_Top_Left, Upper_Rear_Left, CarColor, Thickness)
+					Line(Upper_Top_Right, Upper_Rear_Right, CarColor, Thickness)
+					Line(Upper_Top_Left, Upper_Top_Right, CarColor, Thickness)
+					Line(Upper_Rear_Left, Upper_Rear_Right, CarColor, Thickness)
+					Line(Lower_Top_Left, Upper_Top_Left, CarColor, Thickness)
+					Line(Lower_Rear_Left, Upper_Rear_Left, CarColor, Thickness)
+					Line(Lower_Top_Right, Upper_Top_Right, CarColor, Thickness)
+					Line(Lower_Rear_Right, Upper_Rear_Right, CarColor, Thickness)
+				end
 			end
 		end
-		
-		if ui.checkbox("ExtraWalls",settings.MinecraftESPWalling) then
-			settings.MinecraftESPWalling = not settings.MinecraftESPWalling
+	end
+end
+
+
+local function ESPSettings()
+	if ui.button(settings.ESP == true and "ESP on" or settings.ESP == false and "ESP off") then
+		settings.ESP = not settings.ESP
+	end
+
+	if settings.ESP == true then
+		ui.sameLine(0,2)
+		if ui.button(settings.ESP2D == true and "ESP2D on" or settings.ESP2D == false and "ESP2D off") then
+			settings.ESP2D = not settings.ESP2D
 		end
-		local HowFar = ui.slider("##linedis",settings.MinecraftESPLinesDist,50,2000, 'Distance: %.0f',1)
+		ui.sameLine(0,2)
+		if ui.button(settings.ESP3D == true and "ESP3D on" or settings.ESP3D == false and "ESP3D off") then
+			settings.ESP3D = not settings.ESP3D
+		end
+		local HowFar = ui.slider("##linedis",settings.ESPMaxDist,50,2000, 'Distance: %.0f',1)
 		if HowFar then
-			settings.MinecraftESPLinesDist = HowFar
+			settings.ESPMaxDist = HowFar
+		end
+	end
+	if settings.ESP2D and settings.ESP then
+		if ui.checkbox("2D Boxes",settings.ESP2DBoxes) then
+			settings.ESP2DBoxes = not settings.ESP2DBoxes
+		end 
+		ui.sameLine(0,5)
+		if ui.checkbox("2D Lines",settings.ESP2DLines) then
+			settings.ESP2DLines = not settings.ESP2DLines
+		end
+	end
+	if settings.ESP3D and settings.ESP then
+		if ui.checkbox("3D Boxes",settings.ESP3DBoxes) then
+			settings.ESP3DBoxes = not settings.ESP3DBoxes
+		end
+		if ui.checkbox("3D Lines",settings.ESP3DLines) then
+			settings.ESP3DLines = not settings.ESP3DLines
+		end
+		if settings.ESP3DLines == true then
+			ui.sameLine(0,15)
+			if ui.checkbox("3D From Cam",settings.ESP3DFromCam) then
+				settings.ESP3DFromCam = not settings.ESP3DFromCam
+			end
+		end
+		if ui.checkbox("3D ExtraWalls",settings.ESP3DWallBetter) then
+			settings.ESP3DWallBetter = not settings.ESP3DWallBetter
 		end
 	end
 end
 
 
 
-sim = ac.getSim()
-local Replaylut = ac.DataLUT11():add(0,0):add(1,sim.replayFrameMs-0.001)
+local Replaylut = ac.DataLUT11():add(0,0):add(1,ac.getSim().replayFrameMs-0.001)
 Replaylut.extrapolate = true
 
 local function replaything()
 	if ac.isInReplayMode() then
-		local sim = ac.getSim()
 		local HowManyFrames 		= sim.replayFrames
 		local CurrentFrameLocation 	= sim.replayCurrentFrame
 		ac.debug("2",sim.replayFrameMs)
@@ -218,37 +286,71 @@ local function replaything()
 		if MainFramesOn then
 			ac.setReplayPosition(MainFramesSlider,dec)
 		end
+	end
+end
 
+local function Hazards()
+	if ac.getCar().hazardLights == true then
+		ac.setTurningLights(ac.TurningLights.None)
+	elseif ac.getCar().hazardLights == false then
+		ac.setTurningLights(ac.TurningLights.Hazards)
+	end
+end
+
+LAST_DEBOUNCE = 0
+function debounceValues(func, wait,d)
+    local now = sim.time
+    if now - LAST_DEBOUNCE < wait then return end
+    LAST_DEBOUNCE = now
+    return func()
+end
+
+local function test()
+	local input = ac.isGamepadButtonPressed(4, ac.GamepadButton.Microphone)
+	local input2 = ac.isGamepadButtonPressed(4, ac.GamepadButton.X)
+
+	if input and not input2 then
+		debounceValues(Hazards, 2500,"A")
+	end
+	if input2 and not input then
+		debounceValues(Hazards, 2500,"B")
 	end
 end
 
 function script.SahneExtra()
 	ui.tabBar("##Bracked",function ()
-		ui.tabItem("ESP",MEINKAMPFESP)
+		ui.tabItem("ESP",ESPSettings)
 		ui.tabItem("Replay?",replaything)
 	end)
 end
 
+function script.update()
+	--DriverNamesToggle()
+end
+
 function script.fullscreenUI()
-	DriverNamesToggle()
-	DriverNames()
+	if settings.ESP2D then
+		ESP2D()
+	end
+	if settings.ShowLeName then
+		DriverNames()
+	end
+	
 end
 
 function script.draw3D()
 	render.setBlendMode(render.BlendMode.Opaque)
 	render.setCullMode(render.CullMode.ShadowsDouble)
-	if settings.MinecraftESPWalling == true then
+	if settings.ESP3DWallBetter == true then
 		render.setDepthMode(render.DepthMode.Off)
 	else
 		render.setDepthMode(render.DepthMode.Normal)
 	end
 	
-	if settings.MinecraftESP == true then
-		LeMeincraftESP()
+	if settings.ESP3D == true then
+		ESP3D()
 	end
 end
-
-
 
 
 ac.setLogSilent(true)
@@ -256,22 +358,21 @@ local function yeet()
 	if io.dirExists(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\") ~= true then
 		io.createDir(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\")
 	end
-
-	local sim = ac.getSim()
 	if sim.isOnlineRace == true then
 		print("we online")
 		local Name = ac.getServerName()
 		local LeIp = ac.getServerIP()
 		local LePort = ac.getServerPortTCP()
-		local Server = tostring(Name.."_"..LeIp.."_"..LePort)
+		local Server = tostring(LeIp .. "_" .. LePort)
 		ServerCfg = ac.INIConfig.onlineExtras()
 		ac.debug("ServerCfg",ServerCfg)
 		if ServerCfg ~= nil then
-			print("saving server ceefg")
-			io.save(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\" .. Server .. ".ini" ,ServerCfg)
+			if io.fileExists(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\" .. Server .. ".ini") ~= true then
+				io.save(ac.getFolder(ac.FolderID.Cfg) .. "\\ExtraTroll\\" .. Server .. ".ini", ServerCfg)
+				print("saving server ceefg")
+			end
 		end
 		print("end")
 	end
 end
-
 yeet()

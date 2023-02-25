@@ -129,8 +129,10 @@ end
 --#endregion
 
 --#region [[One time Press for Controller/Car]]
+
+--bruh
 local Toggle = false
-local function newnames()
+local function Tooggele()
 	local Button = ac.isGamepadButtonPressed(4, ac.GamepadButton.Microphone)
 	local Button = ac.isKeyDown(ac.KeyIndex.LeftButton)
 	local Button = ac.isJoystickButtonPressed(63254,12903)
@@ -146,14 +148,104 @@ local function newnames()
 	if Button == true then
 		-- things that should run should be in here
 	end
-
 	--does magic that the button is only pressed once
 	Toggle = Button
 end
+
+
+--better?? but not as good as
+local OnlyOnce = {
+	Toggle = false,
+	Press = function(self,Button)
+		if Button == self.Toggle then
+			return
+		end
+		if Button == true then
+			print(ui.frameCount().."|1")
+		end
+		self.Toggle = Button
+	end
+}
+--below
+
+--test2
+local Toggle = false
+local function Fuck(INPUT)
+	if INPUT == Toggle then return end
+	if INPUT == true then
+		print("bruuh")
+	end
+	Toggle = INPUT
+end
+
+local Button = ac.isGamepadButtonPressed(4, ac.GamepadButton.Microphone)
+Fuck(Button)
+
+--test2
+
+
+-- taken from gt7 hud / Inori
+sim = ac.getSim()
+--the gt7 part
+LAST_DEBOUNCE = 0
+function debounceValues(func, wait)
+    local now = sim.time
+    if now - LAST_DEBOUNCE < wait then return end
+    LAST_DEBOUNCE = now
+    return func()
+end
+--the gt7 part
+
+--my part
+local function Hazards()
+	if ac.getCar().hazardLights == true then
+		ac.setTurningLights(ac.TurningLights.None)
+	elseif ac.getCar().hazardLights == false then
+		ac.setTurningLights(ac.TurningLights.Hazards)
+	end
+end
+
+local input = ac.isGamepadButtonPressed(4, ac.GamepadButton.Microphone)
+local input2 = ac.isGamepadButtonPressed(4, ac.GamepadButton.X)
+
+
+if input and not input2 then
+	debounceValues(Hazards, 2500)
+end
+if input2 and not input then
+	debounceValues(Hazards, 2500)
+end
+--my part
+-- taken from gt7 hud / Inori
+
 --#endregion
 
 --#region [[Car Physics thing]]
 -- 	if car.gas < 0.01 and car.speedKmh < 10 then do "engine off" thing
+--testthing 
+local StandingTurnoff = {
+	Standing = false,
+	try = function(self,gas,speed)
+		if gas < 0.01 and speed < 10 then
+			setTimeout(
+				function () self.Standing = true end,
+				3, --delay
+				"UniqueKey"
+			) --UniqueKey for clearing
+		elseif gas > 0.01 then
+			clearTimeout("UniqueKey")
+			self.Standing = false
+		end
+		if self.Standing == true then
+			ac.accessCarPhysics().clutch = 0
+			ac.setEngineRPM(ac.getCar(0).rpm - (15))
+		end
+	end
+}
+StandingTurnoff:try(ac.getCar(0).gas,ac.getCar(0).speedKmh)
+--testthing 
+
+--real thing 
 local westanding = false
 function script.update(dt)
 	ac.debug("a",dt * 4500)
@@ -174,6 +266,7 @@ function script.update(dt)
 		ac.setEngineRPM(car.rpm - (15))
 	end
 end
+--real thing 
 --#endregion
 
 --#region [[for importing images or other]]
@@ -182,3 +275,27 @@ local thing = ac.dirname() .. "\\folderdeeper\\image.dds"
 local luathing = ac.dirname() .. "\\otherfolderinsideofapp\\thing.lua"
 require(luathing)--could work?
 --#endregion
+
+
+local function interp(x1,x2,value,y1,y2)
+	return math.lerp(y1,y2,math.lerpInvSat(value,x1,x2))
+end
+
+
+local function lookAt(origin,target)
+	local zaxis = vec3():add(target - origin):normalize()
+	local xaxis = zaxis:clone():cross(vec3(0, 1, 0)):normalize()
+	local yaxis = xaxis:clone():cross(zaxis):normalize()
+	local viewMatrix = mat4x4(
+	vec4(xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(origin)),
+	vec4(yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(origin)),
+	vec4(zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(origin)),
+	vec4(0, 1, 0, 1))
+
+	-- viewMatrix.look
+	-- viewMatrix.up doesnt work
+	-- viewMatrix.side
+	return viewMatrix
+end
+
+

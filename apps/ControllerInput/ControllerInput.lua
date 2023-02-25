@@ -7,13 +7,25 @@ settings = ac.storage({
 	positionY = 0,
 })
 
+local sim = ac.getSim()
+local car = ac.getCar(0)
+local GameSize = vec2(sim.windowWidth, sim.windowHeight)
+local AppSize = vec2(320, 152)
+local dualsense = ac.getDualSense(4)
+local Touch1 = dualsense.touches[0]
+local Touch2 = dualsense.touches[1]
+
+
+local function interp(x1,x2,value,y1,y2)
+	return math.lerp(y1,y2,math.lerpInvSat(value,x1,x2))
+end
+
+
+
+--#region [[Color]]
 local editing = false
-
 local EditingBG 	= false
-local EditingMain 	= false
-
 local colorFlags = bit.bor(ui.ColorPickerFlags.NoSidePreview, ui.ColorPickerFlags.PickerHueWheel)
-
 local function ColorBlock(input)
 	input = input or "tempcolor"
 	local col = settings[input]:clone()
@@ -45,19 +57,16 @@ function ControllerInputSettings()
 			settings.positionY = tonumber(Y)
 		end
 	end
-
-
 	if ui.button("Edit Background") then
 			EditingBG = not EditingBG
 	end
-
 	if EditingBG then
 		ColorBlock("BackgroundColor")
 	end
 end
 
 
-
+--#region [Stick Related]
 local ds5 = {
 	Circle		= ac.dirname() .. "\\ds5\\Circle.png",
 	Cross		= ac.dirname() .. "\\ds5\\Cross.png",
@@ -77,9 +86,75 @@ LeftStickMiddle 	= vec2(80, 80)
 RightStickMiddle 	= vec2(240, 80)
 
 local FacebuttonSpace = 37
-local MainColor = rgbm(1,1,1,0.8)
-local SecondColor = rgbm(1,1,1,0.25)
+local MainColor 	= rgbm(1,1,1,0.8)
+local SecondColor 	= rgbm(1,1,1,0.25)
+--#endregion
 
+--#region  [Touch Related]
+local TouchingColor1 = rgbm(0, 0.5, 1, 0.5)
+local TouchingColor2 = rgbm(0, 1, 0.5, 0.5)
+
+local LightHeadlight	= false
+local HighBeamsTouch1	= false
+local HighBeamsTouch2	= false
+local HazardTouch1		= false
+local HazardTouch2		= false
+local LightLTurn		= false
+local LightRTurn		= false
+local LightOff			= false
+
+local Lights = {
+	Hazards = function()
+		if car.hazardLights == true then
+			ac.setTurningLights(ac.TurningLights.None)
+		elseif car.hazardLights == false then
+			ac.setTurningLights(ac.TurningLights.Hazards)
+		end
+	end,
+	TurnLeft = function()
+		if car.turningLeftLights == true then
+			ac.setTurningLights(ac.TurningLights.None)
+		elseif car.hazardLights == false then
+			ac.setTurningLights(ac.TurningLights.Left)
+		end
+	end,
+	TurnRight = function()
+		if car.turningRightLights == true then
+			ac.setTurningLights(ac.TurningLights.None)
+		elseif car.hazardLights == false then
+			ac.setTurningLights(ac.TurningLights.Right)
+		end
+	end,
+	Headlights = function()
+		if car.headlightsActive == true then
+			ac.setHeadlights(false)
+		elseif car.headlightsActive == false then
+			ac.setHeadlights(true)
+		end
+	end,
+	Highbeams = function()
+		if car.lowBeams == true then
+			ac.setHighBeams(true)
+		elseif car.lowBeams == false then
+			ac.setHighBeams(false)
+		end
+	end,
+	Off = function()
+		ac.setTurningLights(ac.TurningLights.None)
+	end,
+}
+
+LAST_DEBOUNCE = 0
+function debounceValues(func, wait)
+    local now = sim.time
+	ac.debug("now",now)
+	ac.debug("now - LAST_DEBOUNCE",now - LAST_DEBOUNCE)
+	ac.debug("wait",wait)
+    if now - LAST_DEBOUNCE < wait then return end
+    LAST_DEBOUNCE = now
+    return func()
+end
+--#endregion
 
 function Controller()
 	ui.drawRectFilled(0, AppSize, settings.BackgroundColor, 5, nil)
@@ -142,16 +217,87 @@ function Controller()
 	ui.drawCircleFilled(RightStickMiddle + vec2(RSX, RSY), 22, MainColor, 24)
 	ui.drawCircle(RightStickMiddle, 64, MainColor, 32, 2)
 	--#endregion
-end
+	
+	--#region [Touches]
+	-- Touch1.delta.x, negative|left 	positive|right
+	-- Touch1.delta.y, negative|up		positive|down
+	
+	local PadButton = ac.isGamepadButtonPressed(4, ac.GamepadButton.Pad)
 
-sim = ac.getSim()
-car = ac.getCar(0)
-GameSize = vec2(sim.windowWidth, sim.windowHeight)
+	if Touch1.down then
+		Toucher1 = vec2(interp(0, 0.959500, Touch1.pos.x, 0, AppSize.x), interp(0, 0.526855, Touch1.pos.y, 0, AppSize.y))
+		TouchingColor1 = rgbm(0, 0.5, 1, 0.5)
+		if PadButton then
+			TouchingColor1 = rgbm(0, 0.5, 1, 1)
+		end
+
+		LightLTurn = (Toucher1.x < AppSize.x * 0.2)
+		LightRTurn = (Toucher1.x > AppSize.x * 0.8)
+		LightOff = (Toucher1.x > AppSize.x * 0.3) and (Toucher1.x < AppSize.x * 0.7) and (Toucher1.y > AppSize.y * 0.8)
+		LightHeadlight = (Toucher1.x > AppSize.x * 0.3) and (Toucher1.x < AppSize.x * 0.7) and (Toucher1.y < AppSize.y * 0.3)
+		HighBeamsTouch1 = (((Toucher1.x < AppSize.x * 0.15) or (Toucher1.x > AppSize.x * 0.85)) and (Toucher1.y < AppSize.y * 0.5))
+		HazardTouch1 = (((Toucher1.x < AppSize.x * 0.15) or (Toucher1.x > AppSize.x * 0.85)) and (Toucher1.y > AppSize.y * 0.5))
+
+		if LightLTurn and PadButton and not Touch2.down then
+			TouchingColor1 = rgbm(1, 1, 0, 1)
+			debounceValues(Lights.TurnLeft,1000)
+		end
+
+		if LightRTurn and PadButton and not Touch2.down then
+			TouchingColor1 = rgbm(1, 1, 0, 1)
+			debounceValues(Lights.TurnRight,1000)
+		end
+
+		if LightOff and PadButton then
+			TouchingColor1 = rgbm(1,1,0,1)
+			debounceValues(Lights.Off,1000)
+		end
+
+		if LightHeadlight and PadButton then
+			TouchingColor1 = rgbm(1,1,1,1)
+			debounceValues(Lights.Headlights,1000)
+		end
+
+		--#region Touch2
+		if Touch2.down then
+			Toucher2 = vec2(interp(0, 0.959500, Touch2.pos.x, 0, AppSize.x), interp(0, 0.526855, Touch2.pos.y, 0, AppSize.y))
+			TouchingColor2 = rgbm(0, 1, 0.5, 0.5)
+			--Color Change when pressing
+			if PadButton then
+				TouchingColor2 = rgbm(0, 1, 0.5, 1)
+			end
+			HighBeamsTouch2 = (((Toucher2.x < AppSize.x * 0.15) or (Toucher2.x > AppSize.x * 0.85)) and (Toucher2.y < AppSize.y * 0.5))
+			HazardTouch2 = (((Toucher2.x < AppSize.x * 0.15) or (Toucher2.x > AppSize.x * 0.85)) and (Toucher2.y > AppSize.y * 0.5))
+		end
+		--#endregion
+	end
+
+	if HighBeamsTouch1 and HighBeamsTouch2 and PadButton then
+		TouchingColor1 = rgbm(1, 1, 1, 1)
+		TouchingColor2 = rgbm(1, 1, 1, 1)
+		debounceValues(Lights.Highbeams,1000)
+	end
+
+	--Hazards thing
+	if HazardTouch1 and HazardTouch2 and PadButton then
+		TouchingColor1 = rgbm(1, 1, 0, 1)
+		TouchingColor2 = rgbm(1, 1, 0, 1)
+		debounceValues(Lights.Hazards,1000)
+	end
+
+
+	if Touch1.down then
+		ui.drawCircleFilled(Toucher1, 10, TouchingColor1, 24)
+		if Touch2.down then
+			ui.drawCircleFilled(Toucher2, 10, TouchingColor2, 24)
+		end
+	end
+	--#endregion
+end
 
 function ControllerInput()
 	--#region [[App Size]]
 	AppPos = ui.windowPos()
-	AppSize = ui.windowSize()
 	--#endregion
 	
 	--pos stuff

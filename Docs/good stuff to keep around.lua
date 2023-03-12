@@ -67,20 +67,20 @@ end
 --#region [[Keybind Thing]]
 
 	--to keep changes, do not have it in script.* or it will generate a new table every script.*(dt)
-	local keybrd = {value = -1, name = ""}
+	local keybrd = {value = 999, name = ""}
 	--keys cant go into the negative or be zero for csp so using them is the best answer imo
 
 --a button that shows 3 states
 
 if ui.button(keybrd.value == 0 and "Press a Key." or 					--use 0 as a "we are setting a key"
-			(keybrd.value == -1 and "Click to Set Key" or 				--use -1 to show there is no key set
+			(keybrd.value == 999 and "Click to Set Key" or 				--use 999 to show there is no key set
 			(keybrd.value >= 1 and "Selected key: " .. keybrd.name)))	--if value above 0, show the set key name
 			then keybrd.value = 0										--this here sets the value to 0
 end 	
 	
 	--resetting the key a.k.a. simply clearing the table
 if ui.button("Reset Key") then 
-	keybrd.v = -1		-- -1 so it shows no key is set
+	keybrd.v = 999		-- 999 so it shows no key is set
 	keybrd.n = "NIX"	--just something random, wont be seen anyway
 end
 

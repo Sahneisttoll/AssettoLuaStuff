@@ -6,6 +6,7 @@ Settings = ac.storage({
 	tpDistance = 8,
 	SpectatePlayer = false,
 	MousetoTrackRays = false,
+	MousetoTrackRays_updates = "500",
 	MousetoTrackRays_Chord_keyValue = 999,
 	MousetoTrackRays_Chord_KeyName = "",
 	MousetoTrackRays_pos_keyValue = 999,
@@ -18,11 +19,11 @@ Settings = ac.storage({
 
 local timer = {
 	running = 0,	--we move length/blength into here
-	length = 1,		--the normal length after teleporting
+	length = 0,		--the normal length after teleporting
 	blength = 0.5,	--length after setting a button
 }
 
---Menu
+--#region [Menu]
 local function Teleportation()
 	--showing timer seems logical to me here
 	ui.text("Cooldown: " .. math.round(timer.running, 1))
@@ -34,8 +35,10 @@ local function Teleportation()
 		ui.tabItem("Map", MapTest)
 	end)
 end
+--#endregion
 
 --#region [TP to Camera]
+
 function KeybindTP_UI() --first tab
 	ui.text("Teleport to Camera")
 
@@ -280,23 +283,31 @@ end
 local player = ac.getCar(0)
 local sim = ac.getSim()
 local tp_realDirection = mat4x4()
+local DriveableColor = rgbm(3, 0, 0, 1)
 
 local tp_position = vec3()
 function getPosfromMouse()
     local ray = nil
-	local NegateMuchupdate = math.floor(ui.frameCount() % 12)
-	if NegateMuchupdate <= 1 then
-		ac.debug("What","Pos")
+	local time = math.floor(sim.time)
+	local NegateMuchupdate = time % Settings.MousetoTrackRays_updates
+	if NegateMuchupdate <= 25 then --10ms time frame for an update
+		ac.debug("What","pos")
         ray = render.createMouseRay()
         tp_position:set(ray.dir * ray:track() + ray.pos)
+		Driveable = rgbm(3, 0, 0, 1) -- default red when its not driveable
+		if ray:physics() ~= -1 then -- makes it green when you selected a driveable mesh
+			Driveable = rgbm(0, 5, 0, 1)
+			ray:physics(tp_position)
+		end
 	end
 end
 
 local tp_direction_calc = vec3()
 function getDirFromMouse()
     local ray = nil
-	local NegateMuchupdate = math.floor(ui.frameCount() % 12)
-	if NegateMuchupdate <= 1 then
+	local time = math.floor(sim.time)
+	local NegateMuchupdate = time % Settings.MousetoTrackRays_updates
+	if NegateMuchupdate <= 25 then --10ms time frame for an update
 		ac.debug("What","dir")
         ray = render.createMouseRay()
         tp_direction_calc:set(ray.dir * ray:track() + ray.pos)
@@ -323,6 +334,13 @@ function ToTrackWithRotation_UI()
 	if ui.checkbox("Enable Mouse to Track Rays TP", Settings.MousetoTrackRays) then
 		Settings.MousetoTrackRays = not Settings.MousetoTrackRays
 	end
+	ui.text("Updates Per ms (Rays are expensive) 1000ms = 1s")
+	ui.setNextItemWidth(ui.windowWidth()-50)
+	local UpdateperMS, UpdateperMSEnabled = ui.slider("##Upms",Settings.MousetoTrackRays_updates,1,2500,"%.0fms",1)
+	if UpdateperMSEnabled then
+		Settings.MousetoTrackRays_updates = UpdateperMS 
+	end
+	ui.newLine(-15)
 	ui.text("Chord Key")
 	--Toggles Button and starts the key listening
 	if
@@ -426,7 +444,7 @@ function ToTrackWithRotation_UI()
 		ui.button(
 			Settings.MousetoTrackRays_TP_keyValue == 0 and "Press a Key."
 			or (Settings.MousetoTrackRays_TP_keyValue == 999 and "Click to Set Teleport Key"
-			or (Settings.MousetoTrackRays_TP_keyValue >= 1 and "Rotation key: " .. Settings.MousetoTrackRays_TP_KeyName))
+			or (Settings.MousetoTrackRays_TP_keyValue >= 1 and "Teleport key: " .. Settings.MousetoTrackRays_TP_KeyName))
 		)
 	then
 		Settings.MousetoTrackRays_TP_keyValue = 0
@@ -474,10 +492,6 @@ function ToTrackWithRotation_Update()
 			ac.debug("3	: actual dir", tp_realDirection.look)
 		end
 
-ac.debug("51 do we have pos?",not (tp_position ~= nil and tp_position == vec3(0, 0, 0)))
-ac.debug("52 do we have dir?",not (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)))
-
-
 		if
 			ac.isKeyDown(Settings.MousetoTrackRays_TP_keyValue)
 			and not (tp_position ~= nil and tp_position == vec3(0, 0, 0))
@@ -496,10 +510,12 @@ end
 
 function ToTrackWithRotation_draw3D()
 	if Settings.MousetoTrackRays == true then
+		render.setDepthMode(render.DepthMode.Normal)
 		if not (tp_position ~= nil and tp_position == vec3(0, 0, 0)) then
-			render.debugArrow(tp_position+vec3(0,2,0), tp_position, 0.2)
+			render.debugArrow(tp_position+vec3(0,2,0), tp_position, 0.2,Driveable)
 			if  not (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)) then
-				render.debugArrow(tp_position, tp_position + tp_realDirection.look * 3, 0.2)
+				render.setDepthMode(render.DepthMode.Off)
+				render.debugArrow(tp_position, tp_position + tp_realDirection.look * 3, 0.2,Driveable)
 			end
 		end
 	end

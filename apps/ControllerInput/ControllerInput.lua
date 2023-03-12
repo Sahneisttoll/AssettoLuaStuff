@@ -1,329 +1,125 @@
--- ui.drawCircle() 16 radius = 64 pixel radius = 128 diameter
 
-settings = ac.storage({
-	BackgroundColor = rgbm(0, 0, 0, 0.2),
-	CustomPos = false,
-	positionX = 0,
-	positionY = 0,
-})
 
+
+local FirstRun = true
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local GameSize = vec2(sim.windowWidth, sim.windowHeight)
-local AppSize = vec2(320, 152)
+local AppPos = vec2()
+local AppSize = vec2()
+local Scale = 0
+
+local Controller = 0
+local LeftStick = vec2()
+local RightStick= vec2()
+local Triggers 	= vec2()
+local LeftStickMiddle 	= vec2()
+local RightStickMiddle 	= vec2()
+
 local dualsense = ac.getDualSense(4)
-local Touch1 = dualsense.touches[0]
-local Touch2 = dualsense.touches[1]
-
-
-local function interp(x1,x2,value,y1,y2)
-	return math.lerp(y1,y2,math.lerpInvSat(value,x1,x2))
+if dualsense ~= nil then
+	local Touch1 = dualsense.touches[0]
+	local Touch2 = dualsense.touches[1]
 end
 
-
-
---#region [[Color]]
-local editing = false
-local EditingBG 	= false
-local colorFlags = bit.bor(ui.ColorPickerFlags.NoSidePreview, ui.ColorPickerFlags.PickerHueWheel)
-local function ColorBlock(input)
-	input = input or "tempcolor"
-	local col = settings[input]:clone()
-	ui.colorPicker("##color", col, colorFlags)
-	if ui.itemEdited() then
-		settings[input] = col
-		editing = true
-	elseif editing and not ui.itemActive() then
-		editing = false
-	end
-	ui.newLine()
-end
---#endregion
-
-function ControllerInputSettings()
-	ui.dummy(vec2(256, 2))
-	if ui.button(settings.CustomPos == false and "CustomPos Off" or settings.CustomPos == true and "CustomPos On") then
-		settings.CustomPos = not settings.CustomPos
-	end
-	if settings.CustomPos then
-		ui.setNextItemWidth(250)
-		local X = ui.slider("##X",settings.positionX,0,sim.windowWidth-320,"%.0f",1)
-		if X then
-			settings.positionX = tonumber(X)
-		end
-		ui.setNextItemWidth(250)
-		local Y = ui.slider("##Y",settings.positionY,0,sim.windowHeight-152,"%.0f",1)
-		if Y then
-			settings.positionY = tonumber(Y)
-		end
-	end
-	if ui.button("Edit Background") then
-			EditingBG = not EditingBG
-	end
-	if EditingBG then
-		ColorBlock("BackgroundColor")
-	end
-end
-
-
---#region [Stick Related]
-local ds5 = {
-	Circle		= ac.dirname() .. "\\ds5\\Circle.png",
-	Cross		= ac.dirname() .. "\\ds5\\Cross.png",
-	Square		= ac.dirname() .. "\\ds5\\Square.png",
-	Triangle 	= ac.dirname() .. "\\ds5\\Triangle.png",
-}
-
-local StickLut = ac.DataLUT11():add(0, 0):add(1, 64)
-StickLut.extrapolate = true
-
-local TriggerStart = math.rad(180)
-local TriggerEnd = math.rad(360)
+--#region [Luts]
+local TriggerStart = math.rad(179)
+local TriggerEnd = math.rad(361)
 local TriggerLut = ac.DataLUT11():add(0, TriggerStart):add(1, TriggerEnd)
 TriggerLut.extrapolate = true
 
-LeftStickMiddle 	= vec2(80, 80)
-RightStickMiddle 	= vec2(240, 80)
-
-local FacebuttonSpace = 37
-local MainColor 	= rgbm(1,1,1,0.8)
-local SecondColor 	= rgbm(1,1,1,0.25)
+local ScaleLut = ac.DataLUT11():add(512,1):add(1024,2)
+ScaleLut.extrapolate = true
 --#endregion
 
---#region  [Touch Related]
-local TouchingColor1 = rgbm(0, 0.5, 1, 0.5)
-local TouchingColor2 = rgbm(0, 1, 0.5, 0.5)
 
-local LightHeadlight	= false
-local HighBeamsTouch1	= false
-local HighBeamsTouch2	= false
-local HazardTouch1		= false
-local HazardTouch2		= false
-local LightLTurn		= false
-local LightRTurn		= false
-local LightOff			= false
-
-local Lights = {
-	Hazards = function()
-		if car.hazardLights == true then
-			ac.setTurningLights(ac.TurningLights.None)
-		elseif car.hazardLights == false then
-			ac.setTurningLights(ac.TurningLights.Hazards)
-		end
-	end,
-	TurnLeft = function()
-		if car.turningLeftLights == true then
-			ac.setTurningLights(ac.TurningLights.None)
-		elseif car.hazardLights == false then
-			ac.setTurningLights(ac.TurningLights.Left)
-		end
-	end,
-	TurnRight = function()
-		if car.turningRightLights == true then
-			ac.setTurningLights(ac.TurningLights.None)
-		elseif car.hazardLights == false then
-			ac.setTurningLights(ac.TurningLights.Right)
-		end
-	end,
-	Headlights = function()
-		if car.headlightsActive == true then
-			ac.setHeadlights(false)
-		elseif car.headlightsActive == false then
-			ac.setHeadlights(true)
-		end
-	end,
-	Highbeams = function()
-		if car.lowBeams == true then
-			ac.setHighBeams(true)
-		elseif car.lowBeams == false then
-			ac.setHighBeams(false)
-		end
-	end,
-	Off = function()
-		ac.setTurningLights(ac.TurningLights.None)
-	end,
-}
-
-LAST_DEBOUNCE = 0
-function debounceValues(func, wait)
-    local now = sim.time
-	ac.debug("now",now)
-	ac.debug("now - LAST_DEBOUNCE",now - LAST_DEBOUNCE)
-	ac.debug("wait",wait)
-    if now - LAST_DEBOUNCE < wait then return end
-    LAST_DEBOUNCE = now
-    return func()
-end
---#endregion
-
-function Controller()
-	ui.drawRectFilled(0, AppSize, settings.BackgroundColor, 5, nil)
-
-	--#region [[FaceButtons]]
-	--right
-	ui.setCursor(RightStickMiddle - 32 + vec2(FacebuttonSpace, 0))
-	if ac.isGamepadButtonPressed(4, ac.GamepadButton.B) then
-		ui.image(ds5.Circle, 64, MainColor)
-	else
-		ui.image(ds5.Circle, 64, SecondColor)
-	end
-	--bottom
-	ui.setCursor(RightStickMiddle - 32 + vec2(0, FacebuttonSpace))
-	if ac.isGamepadButtonPressed(4, ac.GamepadButton.A) then
-		ui.image(ds5.Cross, 64, MainColor)
-	else
-		ui.image(ds5.Cross, 64, SecondColor)
-	end
-	--left
-	ui.setCursor(RightStickMiddle - 32 + vec2(-FacebuttonSpace, 0))
-	if ac.isGamepadButtonPressed(4, ac.GamepadButton.X) then
-		ui.image(ds5.Square, 64, MainColor)
-	else
-		ui.image(ds5.Square, 64, SecondColor)
-	end
-	--top
-	ui.setCursor(RightStickMiddle - 32 + vec2(0, -FacebuttonSpace))
-	if ac.isGamepadButtonPressed(4, ac.GamepadButton.Y) then
-		ui.image(ds5.Triangle, 64, MainColor)
-	else
-		ui.image(ds5.Triangle, 64, SecondColor)
-	end
-	--#endregion
-
-	--#region [[Middle of Sticks]]
-	ui.drawLine(LeftStickMiddle - vec2(64, 0), LeftStickMiddle + vec2(64, 0), rgbm(1, 1, 1, 0.1), 1)
-	ui.drawLine(LeftStickMiddle - vec2(0, 64), LeftStickMiddle + vec2(0, 64), rgbm(1, 1, 1, 0.1), 1)
-	ui.drawLine(RightStickMiddle - vec2(64, 0), RightStickMiddle + vec2(64, 0), rgbm(1, 1, 1, 0.1), 1)
-	ui.drawLine(RightStickMiddle - vec2(0, 64), RightStickMiddle + vec2(0, 64), rgbm(1, 1, 1, 0.1), 1)
-	--#endregion
-
-	--#region [[Axis]]
-	--left trigger
-	ui.pathArcTo(LeftStickMiddle, 72, TriggerStart, TriggerEnd, 32)
-	ui.pathStroke(rgbm(1, 1, 1, 0.3), false, 5)
-	ui.pathArcTo(LeftStickMiddle, 72, TriggerStart, LT, 32)
-	ui.pathStroke(rgbm(1, 0, 0, 0.8), false, 5)
-	--right trigger
-	ui.pathArcTo(RightStickMiddle, 72, TriggerStart, TriggerEnd, 32)
-	ui.pathStroke(rgbm(1, 1, 1, 0.3), false, 5)
-	ui.pathArcTo(RightStickMiddle, 72, TriggerStart, RT, 32)
-	ui.pathStroke(rgbm(0, 1, 0, 0.8), false, 5)
-	-- LeftStick
-	ui.drawCircle(LeftStickMiddle, 64, MainColor, 32, 2)
-	ui.drawCircleFilled(LeftStickMiddle + vec2(LSX, LSY), 22, MainColor, 24)
-	ui.drawCircleFilled(LeftStickMiddle + vec2(RealSteering, 0), 4, rgbm(1, 0, 0, 0.8), 24)
-
-	--RightStick
-	ui.drawCircleFilled(RightStickMiddle + vec2(RSX, RSY), 22, MainColor, 24)
-	ui.drawCircle(RightStickMiddle, 64, MainColor, 32, 2)
-	--#endregion
-	
-	--#region [Touches]
-	-- Touch1.delta.x, negative|left 	positive|right
-	-- Touch1.delta.y, negative|up		positive|down
-	
-	local PadButton = ac.isGamepadButtonPressed(4, ac.GamepadButton.Pad)
-
-	if Touch1.down then
-		Toucher1 = vec2(interp(0, 0.959500, Touch1.pos.x, 0, AppSize.x), interp(0, 0.526855, Touch1.pos.y, 0, AppSize.y))
-		TouchingColor1 = rgbm(0, 0.5, 1, 0.5)
-		if PadButton then
-			TouchingColor1 = rgbm(0, 0.5, 1, 1)
-		end
-
-		LightLTurn = (Toucher1.x < AppSize.x * 0.2)
-		LightRTurn = (Toucher1.x > AppSize.x * 0.8)
-		LightOff = (Toucher1.x > AppSize.x * 0.3) and (Toucher1.x < AppSize.x * 0.7) and (Toucher1.y > AppSize.y * 0.8)
-		LightHeadlight = (Toucher1.x > AppSize.x * 0.3) and (Toucher1.x < AppSize.x * 0.7) and (Toucher1.y < AppSize.y * 0.3)
-		HighBeamsTouch1 = (((Toucher1.x < AppSize.x * 0.15) or (Toucher1.x > AppSize.x * 0.85)) and (Toucher1.y < AppSize.y * 0.5))
-		HazardTouch1 = (((Toucher1.x < AppSize.x * 0.15) or (Toucher1.x > AppSize.x * 0.85)) and (Toucher1.y > AppSize.y * 0.5))
-
-		if LightLTurn and PadButton and not Touch2.down then
-			TouchingColor1 = rgbm(1, 1, 0, 1)
-			debounceValues(Lights.TurnLeft,1000)
-		end
-
-		if LightRTurn and PadButton and not Touch2.down then
-			TouchingColor1 = rgbm(1, 1, 0, 1)
-			debounceValues(Lights.TurnRight,1000)
-		end
-
-		if LightOff and PadButton then
-			TouchingColor1 = rgbm(1,1,0,1)
-			debounceValues(Lights.Off,1000)
-		end
-
-		if LightHeadlight and PadButton then
-			TouchingColor1 = rgbm(1,1,1,1)
-			debounceValues(Lights.Headlights,1000)
-		end
-
-		--#region Touch2
-		if Touch2.down then
-			Toucher2 = vec2(interp(0, 0.959500, Touch2.pos.x, 0, AppSize.x), interp(0, 0.526855, Touch2.pos.y, 0, AppSize.y))
-			TouchingColor2 = rgbm(0, 1, 0.5, 0.5)
-			--Color Change when pressing
-			if PadButton then
-				TouchingColor2 = rgbm(0, 1, 0.5, 1)
+function GetControllerIndex()
+	for GamepadIndex = 0, 7 do
+		for Axis = 0, 5 do 
+			if ac.getGamepadAxisValue(GamepadIndex, Axis) > 0.01 then
+				Controller = GamepadIndex
 			end
-			HighBeamsTouch2 = (((Toucher2.x < AppSize.x * 0.15) or (Toucher2.x > AppSize.x * 0.85)) and (Toucher2.y < AppSize.y * 0.5))
-			HazardTouch2 = (((Toucher2.x < AppSize.x * 0.15) or (Toucher2.x > AppSize.x * 0.85)) and (Toucher2.y > AppSize.y * 0.5))
-		end
-		--#endregion
-	end
-
-	if HighBeamsTouch1 and HighBeamsTouch2 and PadButton then
-		TouchingColor1 = rgbm(1, 1, 1, 1)
-		TouchingColor2 = rgbm(1, 1, 1, 1)
-		debounceValues(Lights.Highbeams,1000)
-	end
-
-	--Hazards thing
-	if HazardTouch1 and HazardTouch2 and PadButton then
-		TouchingColor1 = rgbm(1, 1, 0, 1)
-		TouchingColor2 = rgbm(1, 1, 0, 1)
-		debounceValues(Lights.Hazards,1000)
-	end
-
-
-	if Touch1.down then
-		ui.drawCircleFilled(Toucher1, 10, TouchingColor1, 24)
-		if Touch2.down then
-			ui.drawCircleFilled(Toucher2, 10, TouchingColor2, 24)
 		end
 	end
-	--#endregion
+	FirstRun = false
 end
+
+function script.update()
+	if FirstRun == true then
+		GetControllerIndex()
+		ac.debug("Cont",Controller)
+	end
+end
+--real steer -1 to 1   RealSteering = car.steer/car.steerLock
+
 
 function ControllerInput()
-	--#region [[App Size]]
 	AppPos = ui.windowPos()
-	--#endregion
-	
-	--pos stuff
-	--leftstick
-	LSX = ac.getGamepadAxisValue(4, ac.GamepadAxis.LeftThumbX)
-	LSY = ac.getGamepadAxisValue(4, ac.GamepadAxis.LeftThumbY)
-	LSX = StickLut:get(LSX)	 * 0.95
-	LSY = StickLut:get(-LSY) * 0.95
-	--real steer
-	RealSteering = car.steer/car.steerLock
-	RealSteering = StickLut:get(RealSteering)
-	--rightstick
-	RSX = ac.getGamepadAxisValue(4, ac.GamepadAxis.RightThumbX)
-	RSY = ac.getGamepadAxisValue(4, ac.GamepadAxis.RightThumbY)
-	RSX = StickLut:get(RSX)  * 0.95
-	RSY = StickLut:get(-RSY) * 0.95
-	--triggers
-	LT = ac.getGamepadAxisValue(4, ac.GamepadAxis.LeftTrigger)
-	RT = ac.getGamepadAxisValue(4, ac.GamepadAxis.RightTrigger)
-	LT = TriggerLut:get(LT)
-	RT = TriggerLut:get(RT)
+	AppSize = ui.windowSize()
 
-	if EditingBG == true and settings.CustomPos == false then
-		AppPos = AppPos + vec2(0,AppSize.y)
-	elseif EditingBG == true or EditingBG == false and settings.CustomPos == true then
-		AppPos = vec2(settings.positionX,settings.positionY)
+
+	winWidth 	= AppSize.x
+	winHeight 	= AppSize.y
+
+	--#region Scaling
+	ratio = winWidth / winHeight
+	if ratio < 2 then
+		winHeight = winWidth
+	else
+		winWidth = winHeight * 2
 	end
-	ui.transparentWindow("##ATransparentWindow", AppPos, AppSize,Controller)
+	Scale = ScaleLut:get(winWidth)
+	--#endregion
+
+	--#region Get Shit
+	LeftStick = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbY))
+	RightStick = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbY))
+	Triggers = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftTrigger),ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightTrigger))
+	RealSteering = vec2(car.steer / car.steerLock, 0)
+	--#endregion
+
+	--#region number stuff with scaling
+	StickBoundsRadius 	= 100 	* Scale
+	StickBoundSegments  = 48	* Scale
+	StickRadius 		= 25 	* Scale
+	StickSegments 		= 24 	* Scale
+
+	RealSteeringRadius 	= 8 	* Scale
+	RealSteeringSegments= 12 	* Scale
+
+	TriggerWidth		= 8		* Scale
+	TriggerRadius 		= 120 	* Scale
+	TriggerSegments		= 32	* Scale
+	--#endregion
+
+	--#region vec2 stuff with scaling
+	Triggers:set(vec2(TriggerLut:get(Triggers.x),TriggerLut:get(Triggers.y)))
+	LeftStickMiddle:set(vec2(128,128)):scale(Scale)
+	LeftStick	:scale(100):scale(Scale)
+	RealSteering:scale(100):scale(Scale)
+	RightStickMiddle:set(vec2(384,128)):scale(Scale)
+	RightStick	:scale(100):scale(Scale)
+	--#endregion
+
+	ui.transparentWindow("##ATransparentWindow", AppPos, AppSize, function()
+		ui.drawRectFilled(0, AppSize, rgbm(0, 0, 0, 0.2), 15, ui.CornerFlags.All)
+		--Break
+		ui.pathArcTo(LeftStickMiddle, TriggerRadius, TriggerStart, TriggerEnd, TriggerSegments)
+		ui.pathStroke(rgbm(1, 1, 1, 0.3), false, TriggerWidth)
+		ui.pathArcTo(LeftStickMiddle, TriggerRadius, TriggerStart, Triggers.x , TriggerSegments)
+		ui.pathStroke(rgbm(1, 0, 0, 0.8), false, TriggerWidth)
+		--Gas
+		ui.pathArcTo(RightStickMiddle, TriggerRadius, TriggerStart, TriggerEnd, TriggerSegments)
+		ui.pathStroke(rgbm(1, 1, 1, 0.3), false, TriggerWidth)
+		ui.pathArcTo(RightStickMiddle, TriggerRadius, TriggerStart, Triggers.y , TriggerSegments)
+		ui.pathStroke(rgbm(0, 1, 0, 0.8), false, TriggerWidth)
+
+		--LeftStick + Steering Output
+		ui.drawCircle(LeftStickMiddle, StickBoundsRadius, rgbm(1, 1, 1, 0.8), StickBoundSegments, 2)
+		ui.drawCircleFilled(LeftStickMiddle + LeftStick, StickRadius, rgbm(1, 1, 1, 0.8), StickSegments)
+		ui.drawCircleFilled(LeftStickMiddle + RealSteering, RealSteeringRadius, rgbm(1, 0, 0, 0.8), RealSteeringSegments)
+		--RightStick
+		ui.drawCircle(RightStickMiddle, StickBoundsRadius, rgbm(1, 1, 1, 0.8), StickBoundSegments, 2)
+		ui.drawCircleFilled(RightStickMiddle + RightStick, StickRadius, rgbm(1, 1, 1, 0.8), StickSegments)
+	end)
 end

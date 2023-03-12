@@ -283,19 +283,19 @@ end
 
 
 local function lookAt(origin,target)
-	local zaxis = vec3():add(target - origin):normalize()
-	local xaxis = zaxis:clone():cross(vec3(0, 1, 0)):normalize()
-	local yaxis = xaxis:clone():cross(zaxis):normalize()
-	local viewMatrix = mat4x4(
-	vec4(xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(origin)),
-	vec4(yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(origin)),
-	vec4(zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(origin)),
-	vec4(0, 1, 0, 1))
-
-	-- viewMatrix.look
-	-- viewMatrix.up doesnt work
-	-- viewMatrix.side
-	return viewMatrix
+	if origin ~= nil and target ~= nil then
+		local zaxis = vec3():add(target - origin):normalize()
+		local xaxis = zaxis:clone():cross(vec3(0, 1, 0)):normalize()
+		local yaxis = xaxis:clone():cross(zaxis):normalize()
+		local viewMatrix = mat4x4(
+		vec4(xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(origin)),
+		vec4(yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(origin)),
+		vec4(zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(origin)),
+		vec4(0, 1, 0, 1))
+		-- viewMatrix.look
+		-- viewMatrix.side
+		return viewMatrix
+	end
 end
 
 

@@ -1,58 +1,72 @@
-CameraKey = ac.storage({
-	v = -1, --key value for ac
-	n = "", --key name for user
-	showtp = false,
+Settings = ac.storage({
+	KeyValue = 999, --key value for ac
+	KeyName = "", --key name for user
+	TPtoCam = false,
+	ShowKeyTP = false,
+	tpDistance = 8,
+	SpectatePlayer = false,
+	MousetoTrackRays = false,
+	MousetoTrackRays_Chord_keyValue = 999,
+	MousetoTrackRays_Chord_KeyName = "",
+	MousetoTrackRays_pos_keyValue = 999,
+	MousetoTrackRays_pos_KeyName = "",
+	MousetoTrackRays_dir_keyValue = 999,
+	MousetoTrackRays_dir_KeyName = "",
+	MousetoTrackRays_TP_keyValue = 999,
+	MousetoTrackRays_TP_KeyName = "",
 })
 
 local timer = {
 	running = 0,	--we move length/blength into here
-	length = 3,		--the normal length after teleporting
+	length = 1,		--the normal length after teleporting
 	blength = 0.5,	--length after setting a button
 }
-
-local tpdistance = 8
-
-
 
 --Menu
 local function Teleportation()
 	--showing timer seems logical to me here
 	ui.text("Cooldown: " .. math.round(timer.running, 1))
 
-	ui.tabBar("Atabbar", function() --A TAB BAR
-		ui.tabItem("Car to Camera", keybindtp) --ayo
-		ui.tabItem("Car to Car", cartocar) --piss
-		ui.tabItem("Map", Mapthing)
+	ui.tabBar("Atabbar", function()
+		ui.tabItem("Car to Camera", KeybindTP_UI)
+		ui.tabItem("Mouse to Track", ToTrackWithRotation_UI) 
+		ui.tabItem("Car to Car", CartoCar_UI)
+		ui.tabItem("Map", MapTest)
 	end)
 end
 
-
-function keybindtp() --first tab
+--#region [TP to Camera]
+function KeybindTP_UI() --first tab
 	ui.text("Teleport to Camera")
 
-	local distanceslider , tpbool = ui.slider("###tpdistance", tpdistance, 0, 20, "TP Distance: %.0f Meters", 1)
-	if tpbool then
-		tpdistance = distanceslider
+	if ui.checkbox("Enalbe", Settings.TPtoCam) then
+		Settings.TPtoCam = not Settings.TPtoCam
 	end
 
-	if ui.checkbox("Show TP destination when holding down TP button", CameraKey.showtp) then
-		CameraKey.showtp = not CameraKey.showtp
+
+	local distanceslider , tpbool = ui.slider("###tpdist", Settings.tpDistance, 0, 20, "TP Distance: %.0f Meters", 1)
+	if tpbool then
+		Settings.tpDistance = distanceslider
+	end
+
+	if ui.checkbox("Show TP destination when holding down TP button", Settings.ShowKeyTP) then
+		Settings.ShowKeyTP = not Settings.ShowKeyTP
 	end
 
 	--Toggles Button and starts the key listening
 	if
 		ui.button(
-			CameraKey.v == 0 and "Press a Key."
-			or (CameraKey.v == -1 and "Click to Set Key" 
-			or (CameraKey.v >= 1 and "Selected key: " .. CameraKey.n)))
+			Settings.KeyValue == 0 and "Press a Key."
+			or (Settings.KeyValue == 999 and "Click to Set Key" 
+			or (Settings.KeyValue >= 1 and "Selected key: " .. Settings.KeyName)))
 	then
-		CameraKey.v = 0
+		Settings.KeyValue = 0
 	end
 	ui.sameLine() --makes 🔼🔽 same line
 	--resets the key
 	if ui.button("Reset Key") then
-		CameraKey.v = -1
-		CameraKey.n = "null"
+		Settings.KeyValue = 999
+		Settings.KeyName = "null"
 	end
 	--shows cooldown timer via script.drawUI
 	if ui.checkbox("Show Cooldown and Key", OverlayTimerKey) then
@@ -60,22 +74,76 @@ function keybindtp() --first tab
 	end
 
 	--starts listening for keys when button is pressed
-	if CameraKey.v == 0 then
+	if Settings.KeyValue == 0 then
 		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
 			if ui.keyboardButtonDown(value) then
 				if timer.running <= 0.5 then
 					timer.running = timer.blength
 				else
 				end --anti "cooldown" bypass LOL
-				CameraKey.v = value
-				CameraKey.n = tostring(key)
+				Settings.KeyValue = value
+				Settings.KeyName = tostring(key)
 			end
 		end
 	end
 end
 
-function cartocar() --just straight up ripped from teleport to car cause it seems modular af LOL
+function TPtoCam_Update()
+	if Settings.TPtoCam == true then
+		if ui.keyboardButtonReleased(Settings.KeyValue) and timer.running <= 0 then
+			local teleportPoint = ac.getCameraPosition()
+			local TeleportAngle = ac.getCameraForward()
+			physics.setCarVelocity(0, vec3(0, 0, 0))
+			physics.setCarPosition(0, teleportPoint + vec3(0,-1,0) + TeleportAngle * Settings.tpDistance, -TeleportAngle * vec3(1,0,1))
+			timer.running = timer.length
+		end
+	end
+end
+
+function TPtoCam_draw3D()
+	if Settings.TPtoCam == true then
+		if Settings.ShowKeyTP and ui.keyboardButtonDown(Settings.KeyValue) then
+			render.setBlendMode(render.BlendMode.Opaque)
+			render.setCullMode(render.CullMode.Wireframe)
+			render.setDepthMode(render.DepthMode.ReadOnlyLessEqual)
+			local campos = ac.getCameraPosition():clone()
+			local camlook = ac.getCameraForward():clone():normalize()
+			local camside = ac.getCameraSide():clone()
+			campos:set(vec3(campos + vec3(0,-1,0) + camlook * Settings.tpDistance))
+	
+			local FrontBack = vec3()
+			local Sides = vec3()
+			local Top_Left = vec3()
+			local Top_Right = vec3()
+			local Rear_Left = vec3()
+			local Rear_Right= vec3()
+			local LookArrow = vec3()
+	
+			FrontBack	:set((camlook):mul(vec3(1, 0, 1))):scale(ac.getCar(0).aabbSize.x):normalize():scale(1.75)
+			Sides		:set(camside):scale(ac.getCar(0).aabbSize.x):scale(0.5)
+			Top_Left	:set(campos):add( FrontBack - Sides)
+			Top_Right	:set(campos):add( FrontBack + Sides)
+			Rear_Left	:set(campos):add(-FrontBack - Sides)
+			Rear_Right	:set(campos):add(-FrontBack + Sides)
+			render.debugLine(Top_Left,Top_Right,rgbm(1, 1, 1, 1))
+			render.debugLine(Rear_Left,Rear_Right,rgbm(1, 1, 1, 1))
+			render.debugLine(Top_Left,Rear_Left,rgbm(1, 1, 1, 1))
+			render.debugLine(Top_Right,Rear_Right,rgbm(1, 1, 1, 1))
+			render.debugLine(Top_Left, Rear_Right, rgbm(1, 1, 1, 1))
+			render.debugLine(Top_Right, Rear_Left, rgbm(1, 1, 1, 1))
+	
+			LookArrow:set(camlook):mul(vec3(1,0,1)):normalize():scale(2.5)
+			render.debugArrow(campos+vec3(0,1,0),campos,rgbm(1, 1, 1, 1),2)
+			render.debugArrow(campos,campos+LookArrow,rgbm(1, 1, 1, 1),2)
+		end
+	end
+end
+--#endregion
+
+--#region [Car to Car] --physics stuff works in ui shit too so lol
+function CartoCar_UI()
 	ui.text("Will teleport you 8~ Meters behind the selected car.")
+	if ui.checkbox("Spectate Player on Click",Settings.SpectatePlayer) then Settings.SpectatePlayer = not Settings.SpectatePlayer end
 	ui.text("Select car to teleport to:")
 	ui.childWindow("##drivers", vec2(ui.availableSpaceX(), 120), function()
 		for i = 1, sim.carsCount - 1 do
@@ -84,6 +152,9 @@ function cartocar() --just straight up ripped from teleport to car cause it seem
 			if car.isConnected and not car.isAIControlled and not string.find(driverName, "Traffic") then
 				if ui.selectable(driverName, selectedCar == car) then
 					selectedCar = car
+					if Settings.SpectatePlayer == true then
+						ac.focusCar(i)
+					end
 				end
 				if ui.button("Teleport") and selectedCar and timer.running <= 0 then -- check if car selected/button pressed/timer above 0
 					timer.running = timer.length
@@ -96,8 +167,9 @@ function cartocar() --just straight up ripped from teleport to car cause it seem
 		end
 	end)
 end
+--#endregion
 
--- stuff with map
+--#region [Map stuff, experimental bad]
 local mapstuff = {}
 local pos3, dir3, pos2, dir2, dir2x = vec3(), vec3(), vec2(), vec2(), vec2()
 local padding = vec2(30*3, 50*3)
@@ -119,7 +191,7 @@ if ac.getPatchVersionCode() >= 2000 then
 	config_offset = vec2(mapstuff.X_OFFSET, mapstuff.Z_OFFSET)
 end
 
-function Mapthing()
+function MapTest()
 	ui.text([[
 Press Spacebar while on map to teleport the Camera | You can Drag and zoom into the map. (zoom completely out of it bugged)
 Green = Camera/You
@@ -202,47 +274,265 @@ Red = other users.]])
 		if ui.mouseDown() and ui.itemHovered() then offsets = offsets - ui.mouseDelta() end
 	end)
 end
+--endregion
 
-local function DoTeleport() --simplest teleport function ever
-	local teleportPoint = ac.getCameraPosition()
-	local TeleportAngle = ac.getCameraForward()
-	physics.setCarVelocity(0, vec3(0, 0, 0))
-	physics.setCarPosition(0, teleportPoint + vec3(0,-1,0) + TeleportAngle * tpdistance, -TeleportAngle * vec3(1,0,1))
+--#region [Raycast Mouse thing]
+local player = ac.getCar(0)
+local sim = ac.getSim()
+local tp_realDirection = mat4x4()
+
+local tp_position = vec3()
+function getPosfromMouse()
+    local ray = nil
+	local NegateMuchupdate = math.floor(ui.frameCount() % 12)
+	if NegateMuchupdate <= 1 then
+		ac.debug("What","Pos")
+        ray = render.createMouseRay()
+        tp_position:set(ray.dir * ray:track() + ray.pos)
+	end
 end
 
+local tp_direction_calc = vec3()
+function getDirFromMouse()
+    local ray = nil
+	local NegateMuchupdate = math.floor(ui.frameCount() % 12)
+	if NegateMuchupdate <= 1 then
+		ac.debug("What","dir")
+        ray = render.createMouseRay()
+        tp_direction_calc:set(ray.dir * ray:track() + ray.pos)
+	end
+end
+
+local function lookAt(origin,target)
+	if origin ~= nil and target ~= nil then
+		local zaxis = vec3():add(target - origin):normalize()
+		local xaxis = zaxis:clone():cross(vec3(0, 1, 0)):normalize()
+		local yaxis = xaxis:clone():cross(zaxis):normalize()
+		local viewMatrix = mat4x4(
+		vec4(xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(origin)),
+		vec4(yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(origin)),
+		vec4(zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(origin)),
+		vec4(0, 1, 0, 1))
+		-- viewMatrix.look
+		-- viewMatrix.side
+		return viewMatrix
+	end
+end
+
+function ToTrackWithRotation_UI()
+	if ui.checkbox("Enable Mouse to Track Rays TP", Settings.MousetoTrackRays) then
+		Settings.MousetoTrackRays = not Settings.MousetoTrackRays
+	end
+	ui.text("Chord Key")
+	--Toggles Button and starts the key listening
+	if
+		ui.button(
+			Settings.MousetoTrackRays_Chord_keyValue == 0 and "Press a Key."
+			or (Settings.MousetoTrackRays_Chord_keyValue == 999 and "Click to Chord Set Key"
+			or (Settings.MousetoTrackRays_Chord_keyValue >= 1 and "Chord key: " .. Settings.MousetoTrackRays_Chord_KeyName))
+		)
+	then
+		Settings.MousetoTrackRays_Chord_keyValue = 0
+	end
+	ui.sameLine(0,2) --makes 🔼🔽 same line
+	--resets the key
+	if ui.button("Reset Chord Key") then
+		Settings.MousetoTrackRays_Chord_keyValue = 999
+		Settings.MousetoTrackRays_Chord_KeyName = "null"
+	end
+
+	--starts listening for keys when button is pressed
+	if Settings.MousetoTrackRays_Chord_keyValue == 0 then
+		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
+			if ui.keyboardButtonDown(value) then
+				if timer.running <= 0.5 then
+					timer.running = timer.blength
+				else
+				end --anti "cooldown" bypass LOL
+				Settings.MousetoTrackRays_Chord_keyValue = value
+				Settings.MousetoTrackRays_Chord_KeyName = tostring(key)
+			end
+		end
+	end
+	ui.newLine(-15)
+
+	ui.text("Position Key")
+	--Toggles Button and starts the key listening
+	if
+		ui.button(
+			Settings.MousetoTrackRays_pos_keyValue == 0 and "Press a Key."
+			or (Settings.MousetoTrackRays_pos_keyValue == 999 and "Click to Set Position Key"
+			or (Settings.MousetoTrackRays_pos_keyValue >= 1 and "Position key: " .. Settings.MousetoTrackRays_pos_KeyName))
+		)
+	then
+		Settings.MousetoTrackRays_pos_keyValue = 0
+	end
+	ui.sameLine(0,2) --makes 🔼🔽 same line
+	--resets the key
+	if ui.button("Reset Position Key") then
+		Settings.MousetoTrackRays_pos_keyValue = 999
+		Settings.MousetoTrackRays_pos_KeyName = "null"
+	end
+
+	--starts listening for keys when button is pressed
+	if Settings.MousetoTrackRays_pos_keyValue == 0 then
+		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
+			if ui.keyboardButtonDown(value) then
+				if timer.running <= 0.5 then
+					timer.running = timer.blength
+				else
+				end --anti "cooldown" bypass LOL
+				Settings.MousetoTrackRays_pos_keyValue = value
+				Settings.MousetoTrackRays_pos_KeyName = tostring(key)
+			end
+		end
+	end
+	ui.newLine(-15)
+	ui.text("Rotation Key")
+	--Toggles Button and starts the key listening
+	if
+		ui.button(
+			Settings.MousetoTrackRays_dir_keyValue == 0 and "Press a Key."
+			or (Settings.MousetoTrackRays_dir_keyValue == 999 and "Click to Set Rotation Key"
+			or (Settings.MousetoTrackRays_dir_keyValue >= 1 and "Rotation key: " .. Settings.MousetoTrackRays_dir_KeyName))
+		)
+	then
+		Settings.MousetoTrackRays_dir_keyValue = 0
+	end
+	ui.sameLine(0,2) --makes 🔼🔽 same line
+	--resets the key
+	if ui.button("Reset Rotation Key") then
+		Settings.MousetoTrackRays_dir_keyValue = 999
+		Settings.MousetoTrackRays_dir_KeyName = "nil"
+	end
+
+	--starts listening for keys when button is pressed
+	if Settings.MousetoTrackRays_dir_keyValue == 0 then
+		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
+			if ui.keyboardButtonDown(value) then
+				if timer.running <= 0.5 then
+					timer.running = timer.blength
+				else
+				end --anti "cooldown" bypass LOL
+				Settings.MousetoTrackRays_dir_keyValue = value
+				Settings.MousetoTrackRays_dir_KeyName = tostring(key)
+			end
+		end
+	end
+	ui.newLine(-15)
+	ui.text("Teleport Key")
+	--Toggles Button and starts the key listening
+	if
+		ui.button(
+			Settings.MousetoTrackRays_TP_keyValue == 0 and "Press a Key."
+			or (Settings.MousetoTrackRays_TP_keyValue == 999 and "Click to Set Teleport Key"
+			or (Settings.MousetoTrackRays_TP_keyValue >= 1 and "Rotation key: " .. Settings.MousetoTrackRays_TP_KeyName))
+		)
+	then
+		Settings.MousetoTrackRays_TP_keyValue = 0
+	end
+	ui.sameLine(0,2) --makes 🔼🔽 same line
+	--resets the key
+	if ui.button("Reset Teleport Key") then
+		Settings.MousetoTrackRays_TP_keyValue = 999
+		Settings.MousetoTrackRays_TP_KeyName = "nil"
+	end
+
+	--starts listening for keys when button is pressed
+	if Settings.MousetoTrackRays_TP_keyValue == 0 then
+		for key, value in pairs(ui.KeyIndex) do -- figure out how to add other input support, maybe need manual select cuz previous try was catostropgic
+			if ui.keyboardButtonDown(value) then
+				if timer.running <= 0.5 then
+					timer.running = timer.blength
+				else
+				end --anti "cooldown" bypass LOL
+				Settings.MousetoTrackRays_TP_keyValue = value
+				Settings.MousetoTrackRays_TP_KeyName = tostring(key)
+			end
+		end
+	end
+end
+
+function ToTrackWithRotation_Update()
+	if Settings.MousetoTrackRays == true and timer.running <= 0 then
+		if ac.isKeyDown(Settings.MousetoTrackRays_Chord_keyValue) then
+			if ac.isKeyDown(Settings.MousetoTrackRays_pos_keyValue) then
+				getPosfromMouse()
+			end
+			if ac.isKeyDown(Settings.MousetoTrackRays_dir_keyValue) then
+				getDirFromMouse()
+			end
+		end
+
+
+		if not (tp_position ~= nil and tp_position == vec3(0, 0, 0)) then
+			if not (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)) then
+				tp_realDirection = lookAt(tp_position, tp_direction_calc)
+			end
+			ac.debug("1	: tp_position", tp_position)
+			ac.debug("2	: tp_direction_calc", tp_direction_calc)
+			ac.debug("3	: actual dir", tp_realDirection.look)
+		end
+
+ac.debug("51 do we have pos?",not (tp_position ~= nil and tp_position == vec3(0, 0, 0)))
+ac.debug("52 do we have dir?",not (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)))
+
+
+		if
+			ac.isKeyDown(Settings.MousetoTrackRays_TP_keyValue)
+			and not (tp_position ~= nil and tp_position == vec3(0, 0, 0))
+		then
+			if (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)) then
+				physics.setCarPosition(0, tp_position, -ac.getCar(0).look)
+			else
+				physics.setCarPosition(0, tp_position, -tp_realDirection.look)
+			end
+			tp_position = vec3(0, 0, 0)
+			tp_direction_calc = vec3(0, 0, 0)
+			timer.running = timer.length
+		end
+	end
+end
+
+function ToTrackWithRotation_draw3D()
+	if Settings.MousetoTrackRays == true then
+		if not (tp_position ~= nil and tp_position == vec3(0, 0, 0)) then
+			render.debugArrow(tp_position+vec3(0,2,0), tp_position, 0.2)
+			if  not (tp_direction_calc ~= nil and tp_direction_calc == vec3(0, 0, 0)) then
+				render.debugArrow(tp_position, tp_position + tp_realDirection.look * 3, 0.2)
+			end
+		end
+	end
+end
+--#endregion
+
+
 function script.update(dt)
+	--#region [Timer]
 	if timer.running >= 0 then -- timer for anything to go
 		timer.running = timer.running - dt
 	end
+	--#endregion
 
-	if ui.keyboardButtonReleased(CameraKey.v) and timer.running <= 0 then
-		DoTeleport()
-		timer.running = timer.length
-	end
+	--#region[Functions]
+	TPtoCam_Update()
+	ToTrackWithRotation_Update()
+	--#endregion
 end
 
 function script.drawUI()
 	if OverlayTimerKey == true then
 		ui.transparentWindow("Keyandabindandacooldown", vec2(-15, -5), vec2(150, 150), false, function()
-			ui.text("Key: " .. CameraKey.n .. "\nCooldown: " .. math.round(timer.running, 1))
+			ui.text("Key: " .. Settings.KeyName .. "\nCooldown: " .. math.round(timer.running, 1))
 		end)
 	end
 end
 
 function script.draw3D()
-	if CameraKey.showtp and ui.keyboardButtonDown(CameraKey.v) then
-	render.setBlendMode(render.BlendMode.Opaque)
-	render.setCullMode(render.CullMode.Wireframe)
-	render.setDepthMode(render.DepthMode.ReadOnlyLessEqual)
-		local campos = ac.getCameraPosition()
-		local camlook = ac.getCameraForward()
-		campos = vec3(campos + vec3(0,-1,0) + camlook * tpdistance)
-		camlook = vec3(0, 1, 0)*camlook
-		--physics.setCarVelocity(0, vec3(0, 0, 0))
-		--physics.setCarPosition(0, campos + vec3(0,-1,0) + camlook * 6, -camangle)
-		render.debugPlane(campos,camlook,rgbm(1, 1, 1, 1),1)
-	end
+	ToTrackWithRotation_draw3D()
+	TPtoCam_draw3D()
 end
+
 
 
 ui.registerOnlineExtra(	ui.Icons.Compass,

@@ -232,7 +232,7 @@ local StandingTurnoff = {
 				3, --delay
 				"UniqueKey"
 			) --UniqueKey for clearing
-		elseif gas > 0.01 then
+		elseif gas > 0.01 then 
 			clearTimeout("UniqueKey")
 			self.Standing = false
 		end
@@ -245,11 +245,11 @@ local StandingTurnoff = {
 StandingTurnoff:try(ac.getCar(0).gas,ac.getCar(0).speedKmh)
 --testthing 
 
---real thing 
+--auto off for car thing 
 local westanding = false
 function script.update(dt)
-	ac.debug("a",dt * 4500)
-	if car.gas < 0.01 
+	if 
+	car.gas < 0.01 
 	and car.speedKmh < 10 
 	then
 	  setTimeout(
@@ -266,7 +266,7 @@ function script.update(dt)
 		ac.setEngineRPM(car.rpm - (15))
 	end
 end
---real thing 
+--auto off for car thing 
 --#endregion
 
 --#region [[for importing images or other]]

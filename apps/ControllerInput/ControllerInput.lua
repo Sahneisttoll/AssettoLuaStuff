@@ -1,7 +1,3 @@
-
-
-
-local FirstRun = true
 local sim = ac.getSim()
 local car = ac.getCar(0)
 local AppPos = vec2()
@@ -25,16 +21,17 @@ local ScaleLut = ac.DataLUT11():add(512,1):add(1024,2)
 ScaleLut.extrapolate = true
 --#endregion
 
-
-function GetControllerIndex()
-	for GamepadIndex = 0, 7 do
-		for Axis = 0, 5 do 
-			if ac.getGamepadAxisValue(GamepadIndex, Axis) > 0.01 then
-				Controller = GamepadIndex
+function script.update()
+	if Controller == -1 then
+		for GamepadIndex = 0, 7 do
+			for Axis = 0, 5 do 
+				if ac.getGamepadAxisValue(GamepadIndex, Axis) > 0.000001 then
+					Controller = GamepadIndex
+				end
 			end
 		end
 	end
-	FirstRun = false
+	ac.debug("What Input am i?", Controller < 4 and "Xinput: " .. tostring(Controller) or Controller >= 4 and "DINPUT: " .. tostring(Controller))
 end
 
 local DPAD_Icon = ac.dirname() .. "\\DPAD.png"
@@ -63,16 +60,6 @@ local HandBreak_OFF = ui.atlasIconID(RightOne, vec2(0, 0.5)	, vec2(0.5, 0.75))
 
 local Clutch_ON = ui.atlasIconID(RightOne, vec2(0.5, 0.75), vec2(1, 1))
 local Clutch_OFF = ui.atlasIconID(RightOne, vec2(0, 0.75), vec2(0.5, 1))
-
-
-
-function script.update()
-	if FirstRun == true then
-		GetControllerIndex()
-		ac.debug("What Input am i?", Controller < 4 and "Xinput" or Controller >= 4 and "DINPUT")
-	end
-end
---real steer -1 to 1   RealSteering = car.steer/car.steerLock
 
 
 function ControllerInput()

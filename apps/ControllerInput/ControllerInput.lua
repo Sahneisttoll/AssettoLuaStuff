@@ -22,11 +22,16 @@ ScaleLut.extrapolate = true
 --#endregion
 
 function script.update()
+
 	if Controller == -1 then
+		--[[ after 10 seconds with no input seen by this it will default to 0,
+		this is only here cause specific controllers have their own minimal deadzone and i dont want this to run infinite]]
+		setTimeout(function () if Controller == -1 then Controller = 0 end end, 15, "Controllertimeout")
 		for GamepadIndex = 0, 7 do
 			for Axis = 0, 5 do 
 				if ac.getGamepadAxisValue(GamepadIndex, Axis) > 0.000001 then
 					Controller = GamepadIndex
+					clearTimeout("Controllertimeout")
 				end
 			end
 		end

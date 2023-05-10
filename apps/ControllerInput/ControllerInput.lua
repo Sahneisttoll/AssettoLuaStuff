@@ -12,11 +12,21 @@ local LeftStickMiddle 	= vec2()
 local RightStickMiddle 	= vec2()
 
 --#region [Luts]
+--triggers
 local TriggerStart = math.rad(179)
 local TriggerEnd = math.rad(361)
+
 local TriggerLut = ac.DataLUT11():add(0, TriggerStart):add(1, TriggerEnd)
 TriggerLut.extrapolate = true
 
+
+local function interp(x1,x2,value,y1,y2)
+	return math.lerp(y1,y2,math.lerpInvSat(value,x1,x2))
+end
+
+--	interp(0,math.rad(179),trigger here,1,math.rad(361))
+
+--scaling
 local ScaleLut = ac.DataLUT11():add(512,1):add(1024,2)
 ScaleLut.extrapolate = true
 --#endregion
@@ -27,48 +37,67 @@ function script.update()
 		--[[ after 10 seconds with no input seen by this it will default to 0,
 		this is only here cause specific controllers have their own minimal deadzone and i dont want this to run infinite]]
 		setTimeout(function () if Controller == -1 then Controller = 0 end end, 15, "Controllertimeout")
-		for GamepadIndex = 0, 7 do
-			for Axis = 0, 5 do 
+		for GamepadIndex = 0, 8 do
+			for Axis = 0, 5 do
 				if ac.getGamepadAxisValue(GamepadIndex, Axis) > 0.000001 then
 					Controller = GamepadIndex
 					clearTimeout("Controllertimeout")
 				end
+				--[[
+				if ac.getJoystickAxisValue(GamepadIndex,Axis) > 0.000001 then
+					Controller = 4
+					clearTimeout("Controllertimeout")
+				end
+				]]
 			end
 		end
 	end
+	
+	--#region Debugging ahahaheheheh
+	--[[
+	for GamepadIndex = 0, 8 do
+		for Axis = 0, 5 do
+			ac.debug("Index " .. GamepadIndex.."|Axis "..Axis ,
+			"Gamepad: " .. math.round(ac.getGamepadAxisValue(GamepadIndex, Axis),3) .. 
+			"     Joy pad: " .. math.round(ac.getJoystickAxisValue(GamepadIndex,Axis),3))
+		end
+	end
+	--[[]]
 	ac.debug("What Input am i?", Controller < 4 and "Xinput: " .. tostring(Controller) or Controller >= 4 and "DINPUT: " .. tostring(Controller))
+	--#endregion
 end
 
-local DPAD_Icon = ac.dirname() .. "\\DPAD.png"
-local DPAD_UP_ON = ui.atlasIconID(DPAD_Icon, vec2(0.5, 0)	, vec2(1, 0.25))
-local DPAD_UP_OFF = ui.atlasIconID(DPAD_Icon, vec2(0, 0)	, vec2(0.5, 0.25))
+--#region Icons
+local DPAD_Icon 	= ac.dirname() .. "\\DPAD.png"
+local DPAD_UP_ON 	= ui.atlasIconID(DPAD_Icon, vec2(0.5, 0)	, vec2(1, 0.25))
+local DPAD_UP_OFF 	= ui.atlasIconID(DPAD_Icon, vec2(0, 0)	, vec2(0.5, 0.25))
 
 local DPAD_RIGHT_ON = ui.atlasIconID(DPAD_Icon, vec2(0.5, 0.25)	, vec2(1, 0.5))
-local DPAD_RIGHT_OFF = ui.atlasIconID(DPAD_Icon, vec2(0, 0.25)	, vec2(0.5, 0.5))
+local DPAD_RIGHT_OFF= ui.atlasIconID(DPAD_Icon, vec2(0, 0.25)	, vec2(0.5, 0.5))
 
-local DPAD_DOWN_ON = ui.atlasIconID(DPAD_Icon, vec2(0.5, 0.5)	, vec2(1, 0.75))
+local DPAD_DOWN_ON 	= ui.atlasIconID(DPAD_Icon, vec2(0.5, 0.5)	, vec2(1, 0.75))
 local DPAD_DOWN_OFF = ui.atlasIconID(DPAD_Icon, vec2(0, 0.5)	, vec2(0.5, 0.75))
 
-local DPAD_LEFT_ON = ui.atlasIconID(DPAD_Icon, vec2(0.5, 0.75), vec2(1, 1))
+local DPAD_LEFT_ON 	= ui.atlasIconID(DPAD_Icon, vec2(0.5, 0.75), vec2(1, 1))
 local DPAD_LEFT_OFF = ui.atlasIconID(DPAD_Icon, vec2(0, 0.75), vec2(0.5, 1))
 
 
-local RightOne = ac.dirname() .. "\\brah.png"
-local ShiftUp_ON = ui.atlasIconID(RightOne, vec2(0.5, 0)	, vec2(1, 0.25))
-local ShiftUp_OFF = ui.atlasIconID(RightOne, vec2(0, 0)	, vec2(0.5, 0.25))
+local RightOne 		= ac.dirname() .. "\\brah.png"
+local ShiftUp_ON 	= ui.atlasIconID(RightOne, vec2(0.5, 0)	, vec2(1, 0.25))
+local ShiftUp_OFF 	= ui.atlasIconID(RightOne, vec2(0, 0)	, vec2(0.5, 0.25))
 
-local ShiftDown_ON = ui.atlasIconID(RightOne, vec2(0.5, 0.25)	, vec2(1, 0.5))
+local ShiftDown_ON 	= ui.atlasIconID(RightOne, vec2(0.5, 0.25)	, vec2(1, 0.5))
 local ShiftDown_OFF = ui.atlasIconID(RightOne, vec2(0, 0.25)	, vec2(0.5, 0.5))
 
-local HandBreak_ON = ui.atlasIconID(RightOne, vec2(0.5, 0.5)	, vec2(1, 0.75))
+local HandBreak_ON 	= ui.atlasIconID(RightOne, vec2(0.5, 0.5)	, vec2(1, 0.75))
 local HandBreak_OFF = ui.atlasIconID(RightOne, vec2(0, 0.5)	, vec2(0.5, 0.75))
 
-local Clutch_ON = ui.atlasIconID(RightOne, vec2(0.5, 0.75), vec2(1, 1))
-local Clutch_OFF = ui.atlasIconID(RightOne, vec2(0, 0.75), vec2(0.5, 1))
-
+local Clutch_ON 	= ui.atlasIconID(RightOne, vec2(0.5, 0.75), vec2(1, 1))
+local Clutch_OFF 	= ui.atlasIconID(RightOne, vec2(0, 0.75), vec2(0.5, 1))
+--#endregion
 
 function ControllerInput()
-	AppPos = ui.windowPos()
+	AppPos 	= ui.windowPos()
 	AppSize = ui.windowSize()
 
 
@@ -86,10 +115,10 @@ function ControllerInput()
 	--#endregion
 
 	--#region Get Shit
-	LeftStick = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbY))
-	RightStick = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbY))
-	Triggers = vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftTrigger),ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightTrigger))
-	RealSteering = vec2(car.steer / car.steerLock, 0)
+	LeftStick 	= vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftThumbY))
+	RightStick 	= vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbY))
+	Triggers 	= vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftTrigger),ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightTrigger))
+	RealSteering= vec2(car.steer / car.steerLock, 0)
 	--#endregion
 
 	--#region number stuff with scaling
@@ -107,12 +136,12 @@ function ControllerInput()
 	--#endregion
 
 	--#region vec2 stuff with scaling
-	Triggers:set(vec2(TriggerLut:get(Triggers.x),TriggerLut:get(Triggers.y)))
-	LeftStickMiddle:set(vec2(128,128)):scale(Scale)
-	LeftStick	:scale(100):scale(Scale)
-	RealSteering:scale(100):scale(Scale)
+	Triggers		:set(vec2(TriggerLut:get(Triggers.x),TriggerLut:get(Triggers.y)))
+	LeftStickMiddle	:set(vec2(128,128)):scale(Scale)
+	LeftStick		:scale(100):scale(Scale)
+	RealSteering	:scale(100):scale(Scale)
 	RightStickMiddle:set(vec2(384,128)):scale(Scale)
-	RightStick	:scale(100):scale(Scale)
+	RightStick		:scale(100):scale(Scale)
 
 	DPAD_color		= rgbm(1,1,1,0.8)
 	Dpad_pos_up		= LeftStickMiddle + vec2(-32,-96) * Scale
@@ -142,7 +171,7 @@ function ControllerInput()
 		--Gas
 		ui.pathArcTo(RightStickMiddle, TriggerRadius, TriggerStart, TriggerEnd, TriggerSegments)
 		ui.pathStroke(rgbm(1, 1, 1, 0.3), false, TriggerWidth)
-		ui.pathArcTo(RightStickMiddle, TriggerRadius, TriggerStart, Triggers.y , TriggerSegments)
+		ui.pathArcTo(RightStickMiddle, TriggerRadius, TriggerStart, Triggers.y, TriggerSegments)
 		ui.pathStroke(rgbm(0, 1, 0, 0.8), false, TriggerWidth)
 
 		--LeftStick + Steering Output
@@ -184,14 +213,23 @@ function ControllerInput()
 
 		--rightstick one
 		ui.setCursor(other_pos_left)
-		if ac.isControllerGearUpPressed() then
+
+		--[[
+			thanks csp80p218 for breaking it
+			if ac.isControllerGearUpPressed() then 
+		]]
+		if ac.isGamepadButtonPressed(Controller,ac.GamepadButton.X) then -- temp fix maybe read from the ini next time lol
 			ui.icon(ShiftUp_ON,DPAD_Size,other_color)
 		else
 			ui.icon(ShiftUp_OFF,DPAD_Size,other_color)
 		end
 
 		ui.setCursor(other_pos_down)
-		if ac.isControllerGearDownPressed() then
+		--[[
+			thanks csp80p218 for breaking it		
+			if ac.isControllerGearDownPressed() then 
+		]]
+		if ac.isGamepadButtonPressed(Controller,ac.GamepadButton.A) then -- temp fix maybe read from the ini next time lol
 			ui.icon(ShiftDown_ON,DPAD_Size,other_color)
 		else
 			ui.icon(ShiftDown_OFF,DPAD_Size,other_color)

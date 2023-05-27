@@ -10,18 +10,23 @@ local RightStick= vec2()
 local Triggers 	= vec2()
 local LeftStickMiddle 	= vec2()
 local RightStickMiddle 	= vec2()
+local BackgroundFill 	= vec2()
 
 --#region [Luts]
 --triggers
-local TriggerStart = math.rad(179)
-local TriggerEnd = math.rad(361)
+local TriggerStart = math.rad(180)
+local TriggerEnd = math.rad(360)
 
 local TriggerLut = ac.DataLUT11():add(0, TriggerStart):add(1, TriggerEnd)
 TriggerLut.extrapolate = true
 
-
-local function interp(x1,x2,value,y1,y2)
-	return math.lerp(y1,y2,math.lerpInvSat(value,x1,x2))
+local function PotClamp(StickX,StickY)
+	local stick_radius = math.sqrt((StickX ^2) + (StickY ^2))
+	if (stick_radius > 1) then
+		StickX = StickX / stick_radius
+		StickY = StickY / stick_radius
+	end
+	return vec2(StickX,StickY)
 end
 
 --	interp(0,math.rad(179),trigger here,1,math.rad(361))
@@ -54,7 +59,7 @@ function script.update()
 	end
 	
 	--#region Debugging ahahaheheheh
-	--[[
+	--[[]]
 	for GamepadIndex = 0, 8 do
 		for Axis = 0, 5 do
 			ac.debug("Index " .. GamepadIndex.."|Axis "..Axis ,
@@ -119,51 +124,51 @@ function ControllerInput()
 	RightStick 	= vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbX),-ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightThumbY))
 	Triggers 	= vec2(ac.getGamepadAxisValue(Controller, ac.GamepadAxis.LeftTrigger),ac.getGamepadAxisValue(Controller, ac.GamepadAxis.RightTrigger))
 	RealSteering= vec2(car.steer / car.steerLock, 0)
+	LeftStick 	= PotClamp(LeftStick.x,LeftStick.y)
+	RightStick 	= PotClamp(RightStick.x,RightStick.y)
 	--#endregion
-
 	--#region number stuff with scaling
 	StickBoundsRadius 	= 100 	* Scale
 	StickBoundSegments  = 48	* Scale
-	StickRadius 		= 25 	* Scale
+	StickRadius 		= 20 	* Scale
 	StickSegments 		= 24 	* Scale
 
 	RealSteeringRadius 	= 8 	* Scale
 	RealSteeringSegments= 12 	* Scale
 
 	TriggerWidth		= 8		* Scale
-	TriggerRadius 		= 120 	* Scale
+	TriggerRadius 		= 105 	* Scale
 	TriggerSegments		= 32	* Scale
 	--#endregion
 
 	--#region vec2 stuff with scaling
 	Triggers		:set(vec2(TriggerLut:get(Triggers.x),TriggerLut:get(Triggers.y)))
-	LeftStickMiddle	:set(vec2(128,128)):scale(Scale)
-	LeftStick		:scale(100):scale(Scale)
-	RealSteering	:scale(100):scale(Scale)
-	RightStickMiddle:set(vec2(384,128)):scale(Scale)
-	RightStick		:scale(100):scale(Scale)
+	LeftStick		:scale(80)			:scale(Scale)
+	LeftStickMiddle	:set(vec2(128,128))	:scale(Scale)
+	RealSteering	:scale(93)			:scale(Scale)
+	RightStick		:scale(80)			:scale(Scale)
+	RightStickMiddle:set(vec2(384,128))	:scale(Scale)
+	BackgroundFill	:set(vec2(512,256))	:scale(Scale)
 
 	DPAD_color		= rgbm(1,1,1,0.8)
 	Dpad_pos_up		= LeftStickMiddle + vec2(-32,-96) * Scale
-	Dpad_pos_right	= LeftStickMiddle + vec2(32,-32) * Scale
-	Dpad_pos_down	= LeftStickMiddle + vec2(-32,32) * Scale
+	Dpad_pos_right	= LeftStickMiddle + vec2(32,-32)  * Scale
+	Dpad_pos_down	= LeftStickMiddle + vec2(-32,32)  * Scale
 	Dpad_pos_left	= LeftStickMiddle + vec2(-96,-32) * Scale
 	DPAD_Size		= 64 * Scale
 
 	other_color		= rgbm(1,1,1,0.8)
 	other_pos_up	= RightStickMiddle + vec2(-32,-96) * Scale
-	other_pos_right	= RightStickMiddle + vec2(32,-32) * Scale
-	other_pos_down	= RightStickMiddle + vec2(-32,32) * Scale
+	other_pos_right	= RightStickMiddle + vec2(32,-32)  * Scale
+	other_pos_down	= RightStickMiddle + vec2(-32,32)  * Scale
 	other_pos_left	= RightStickMiddle + vec2(-96,-32) * Scale
 	other_Size		= 64 * Scale
 	--#endregion
 
 	ui.transparentWindow("##ATransparentWindow", AppPos, AppSize, function()
-		--ui.drawLine(LeftStickMiddle-vec2(100,0),LeftStickMiddle+vec2(100,0),rgbm.colors.black,3)
-		--ui.drawLine(LeftStickMiddle-vec2(0,100),LeftStickMiddle+vec2(0,100),rgbm.colors.black,3)
-
-		ui.drawRectFilled(0, AppSize, rgbm(0, 0, 0, 0.2), 15, ui.CornerFlags.All)
+		ui.drawRectFilled(0, BackgroundFill, rgbm(0, 0, 0,0.4), 20, ui.CornerFlags.All)
 		--Break
+		
 		ui.pathArcTo(LeftStickMiddle, TriggerRadius, TriggerStart, TriggerEnd, TriggerSegments)
 		ui.pathStroke(rgbm(1, 1, 1, 0.3), false, TriggerWidth)
 		ui.pathArcTo(LeftStickMiddle, TriggerRadius, TriggerStart, Triggers.x , TriggerSegments)
@@ -250,4 +255,5 @@ function ControllerInput()
 		end
 		
 	end)
+	
 end
